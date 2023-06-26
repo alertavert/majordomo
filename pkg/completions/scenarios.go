@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2023 AlertAvert.com. All rights reserved.
+ */
+
 package completions
 
 var Scenarios = map[string]string{
