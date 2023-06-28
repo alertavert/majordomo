@@ -9,6 +9,6 @@ import (
 )
 
 func setupHandlers(r *gin.Engine) {
-	r.GET("/", indexHandler)
 	r.POST("/prompt", promptHandler)
+	r.Static("/", "ui/majordomo-app/build")
 }
