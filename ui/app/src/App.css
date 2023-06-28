@@ -36,3 +36,9 @@
     transform: rotate(360deg);
   }
 }
+
+.footer-copyright {
+  margin-left: 10px;
+  font-size: 12px;
+  color: #720707;
+}

@@ -1,7 +1,9 @@
-import logo from './logo.svg';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import React, {useState} from "react";
+
+import Logo from './Components/Logo';
+import ResizableTextArea from './Components/ResizableTextArea';
 
 const botUrl = 'http://localhost:5000/prompt';
 
@@ -17,7 +19,7 @@ function App() {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ prompt: content }),
+                body: JSON.stringify({prompt: content}),
             });
 
             if (response.ok) {
@@ -33,6 +35,7 @@ function App() {
 
     return (
         <div className="container">
+            <Logo/>
             <Header/>
             <PromptBox onSubmit={handleFormSubmit}/>
             <span className="d-block p-2"/>
@@ -83,12 +86,7 @@ function ResponseBox({responseValue}) {
         <div className="container-fluid">
             <div className="jumbotron">
                 <h6>Response</h6>
-
-                <textarea className="form-control"
-                          style={{height: '100px', marginTop: '10px'}}
-                          value={responseValue}
-                          readOnly
-                />
+                <ResizableTextArea initialValue={responseValue}/>
             </div>
         </div>
     );
@@ -97,8 +95,9 @@ function ResponseBox({responseValue}) {
 
 function Footer() {
     return (
-        <div className="footer fixed-bottom">
-            <h6>AlertAvert &copy; 2023</h6>
+        <div className="fixed-bottom footer-copyright">
+            <p>&copy; 2023 AlertAvert. All rights
+                reserved.</p>
         </div>
     )
 }
