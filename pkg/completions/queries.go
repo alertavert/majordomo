@@ -92,5 +92,6 @@ func QueryBot(prompt string) (string, error) {
 
 	totalTokens := resp.Usage.TotalTokens
 	fmt.Printf("Tokens used: %d\n", totalTokens)
+	fmt.Printf("Bot says: %s\n", botSays)
 	return botSays, nil
 }

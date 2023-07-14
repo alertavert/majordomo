@@ -6,34 +6,48 @@ package parser
 
 import (
 	"errors"
-	"os"
-	"path/filepath"
+	"fmt"
 	"regexp"
 )
+
+// SourceCode is a map of file paths to their contents
+type SourceCode = map[string]string
+
 // ParseBotResponse parses the bot response and extracts code snippets
-func ParseBotResponse(botSays string) error {
+func ParseBotResponse(botSays string) (SourceCode, error) {
 	snippetRegex := regexp.MustCompile(`'''([\w/.]+?)\n([\s\S]+?)'''`)
 	matches := snippetRegex.FindAllStringSubmatch(botSays, -1)
 
 	if len(matches) == 0 {
-		return errors.New("no valid code snippets found")
+		return nil, errors.New("no valid code snippets found")
+	}
+
+	var sourceCode SourceCode = make(map[string]string)
+	for _, match := range matches {
+		filePath := match[1]
+		content := match[2]
+		sourceCode[filePath] = content
+	}
+	return sourceCode, nil
+}
+
+// InsertSourceCode inserts the code snippets into botSays text
+func InsertSourceCode(botSays string, sourceCode SourceCode) (string, error) {
+	snippetRegex := regexp.MustCompile(`'''([\w/.]+?)\n'''`)
+	matches := snippetRegex.FindAllStringSubmatch(botSays, -1)
+
+	if len(matches) == 0 {
+		return botSays, nil
 	}
 
 	for _, match := range matches {
 		filePath := match[1]
-		content := match[2]
-
-		if _, err := os.Stat(filePath); os.IsNotExist(err) {
-			if err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
-				return err
-			}
+		content, ok := sourceCode[filePath]
+		if !ok {
+			// TODO: before returning an error, we should probably try to fetch the file from disk.
+			return "", errors.New(fmt.Sprintf("no source code found for path: %s", filePath))
 		}
-
-		err := os.WriteFile(filePath, []byte(content), 0644)
-		if err != nil {
-			return err
-		}
+		botSays = snippetRegex.ReplaceAllLiteralString(botSays, fmt.Sprintf("'''%s\n%s'''", filePath, content))
 	}
-
-	return nil
+	return botSays, nil
 }
