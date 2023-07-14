@@ -6,16 +6,16 @@ GOOS ?= $(shell uname -s | tr "[:upper:]" "[:lower:]")
 GOARCH ?= amd64
 GOMOD := $(shell go list -m)
 
-release := $(shell git describe --tags --always --dirty="-dev")
+# Versioning
+# The `version` is a static value, set in settings.yaml, and used to tag the release.
 version := $(shell cat settings.yaml | yq -r .version)
-prog := fsm-server
-bin := out/bin/$(prog)-$(version)_$(GOOS)-$(GOARCH)
+# `release` is generated automatically from the most recent tag (version) and the
+# current commit hash, and is used to tag the Docker image.
+release := $(shell git describe --tags --always --dirty="-dev")
+prog := majordomo
+bin := out/bin/$(prog)-$(release)_$(GOOS)-$(GOARCH)
 
-# CLI Configuration
-cli := out/bin/fsm-cli-$(version)_$(GOOS)-$(GOARCH)
-cli_config := ${HOME}/.fsm
-
-image := massenz/statemachine
+image := alertavert/$(prog)
 compose := docker/compose.yaml
 dockerfile := docker/Dockerfile
 
@@ -24,7 +24,7 @@ dockerfile := docker/Dockerfile
 # Edit only the packages list, when adding new functionality,
 # the rest is deduced automatically.
 #
-pkgs := ./api ./grpc ./pubsub ./storage
+pkgs := $(shell find pkg -mindepth 1 -type d)
 all_go := $(shell for d in $(pkgs); do find $$d -name "*.go"; done)
 test_srcs := $(shell for d in $(pkgs); do find $$d -name "*_test.go"; done)
 srcs := $(filter-out $(test_srcs),$(all_go))
@@ -32,15 +32,7 @@ srcs := $(filter-out $(test_srcs),$(all_go))
 ##@ General
 
 # The help target prints out all targets with their descriptions organized
-# beneath their categories. The categories are represented by '##@' and the
-# target descriptions by '##'. The awk commands is responsible for reading the
-# entire set of makefiles included in this invocation, looking for lines of the
-# file as xyz: ## something, and then pretty-format the target and help. Then,
-# if there's a line with ##@ something, that gets pretty-printed as a category.
-# More info on the usage of ANSI control characters for terminal formatting:
-# https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_parameters
-# More info on the awk command:
-# http://linuxcommand.org/lc3_adv_awk.php
+# beneath their categories.
 
 .PHONY: help
 help: ## Display this help.
@@ -57,39 +49,33 @@ version: ## Displays the current version tag (release)
 	@echo $(release)
 
 fmt: ## Formats the Go source code using 'go fmt'
-	@go fmt $(pkgs) ./cmd ./clients
+	@go fmt $(pkgs) ./cmd
 
 ##@ Development
 .PHONY: build test container cov clean fmt
-$(bin): server/main.go $(srcs)
+$(bin): cmd/main.go $(srcs)
 	@mkdir -p $(shell dirname $(bin))
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build \
 		-ldflags "-X $(GOMOD)/api.Release=$(release)" \
-		-o $(bin) server/main.go
+		-o $(bin) cmd/main.go
 
 .PHONY: build
 build: $(bin) ## Builds the Statemachine server binary
 
-.PHONY: cli
-cli: cli/fsm-cli.go  ## Builds the CLI client used to connect to the server
-	@mkdir -p $(shell dirname $(cli))
-	GOOS=$(GOOS) GOARCH=$(GOARCH) go build \
-		-ldflags "-X main.Release=$(version)" \
-		-o $(cli) cli/fsm-cli.go
-
-.PHONY: cli_tests
-cli-test: client/handlers_test.go ## Run tests for the CLI Client
-	@mkdir -p $(cli_config)/certs
-	@cp certs/ca.pem $(cli_config)/certs
-	RELEASE=$(release) BASEDIR=$(shell pwd) ginkgo test ./client
-
 test: $(srcs) $(test_srcs)  ## Runs all tests
-	ginkgo $(pkgs)
+	ginkgo -p $(pkgs)
 
 cov: $(srcs) $(test_srcs)  ## Runs the Test Coverage and saves the coverage report to out/reports/cov.out
 	@mkdir -p out/reports
 	@go test -coverprofile=out/reports/cov.out $(pkgs)
 	@echo "Coverage report at out/reports/cov.out"
+
+.PHONY: all
+all: build test ## Builds the binary and runs all tests
+
+.PHONY: run
+run: $(bin) ## Runs the server binary
+	@$(bin)
 
 ##@ Container Management
 # Convenience targets to run locally containers and
@@ -98,20 +84,9 @@ cov: $(srcs) $(test_srcs)  ## Runs the Test Coverage and saves the coverage repo
 container: ## Builds the container image
 	docker build -f $(dockerfile) -t $(image):$(release) .
 
-.PHONY: start
-start: ## Starts the Redis and LocalStack containers, and Creates the SQS Queues in LocalStack
-	@RELEASE=$(release) BASEDIR=$(shell pwd) docker compose -f $(compose) --project-name sm up redis localstack -d
-	@sleep 3
-	@for queue in events notifications; do \
-		aws --no-cli-pager --endpoint-url=http://localhost:4566 \
-			--region us-west-2 \
- 			sqs create-queue --queue-name $$queue; done
-	@RELEASE=$(release) BASEDIR=$(shell pwd) docker compose -f $(compose) --project-name sm up server
-
-.PHONY: stop
-stop: ## Stops the Redis and LocalStack containers
-	@RELEASE=$(release) BASEDIR=$(shell pwd) docker compose -f $(compose) --project-name sm down
-
+.PHONY: run-container
+run-container: container ## Runs the container locally
+	docker run --rm -it -p 8080:8080 $(image):$(release)
 
 ##@ TLS Support
 #
