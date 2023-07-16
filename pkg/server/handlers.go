@@ -11,7 +11,7 @@ import (
 func setupHandlers(r *gin.Engine) {
 	r.POST("/prompt", promptHandler)
 	r.POST("/echo", echoHandler)
-	r.Static("/", "ui/app/build")
+	r.Static("/", "build/ui")
 }
 
 type PromptRequestBody struct {

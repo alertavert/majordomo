@@ -13,7 +13,7 @@ version := $(shell cat settings.yaml | yq -r .version)
 # current commit hash, and is used to tag the Docker image.
 release := $(shell git describe --tags --always --dirty="-dev")
 prog := majordomo
-bin := out/bin/$(prog)-$(release)_$(GOOS)-$(GOARCH)
+bin := build/bin/$(prog)-$(release)_$(GOOS)-$(GOARCH)
 
 image := alertavert/$(prog)
 compose := docker/compose.yaml
@@ -66,7 +66,7 @@ test: $(srcs) $(test_srcs)  ## Runs all tests
 	ginkgo -p $(pkgs)
 
 cov: $(srcs) $(test_srcs)  ## Runs the Test Coverage and saves the coverage report to out/reports/cov.out
-	@mkdir -p out/reports
+	@mkdir -p build/reports
 	@go test -coverprofile=out/reports/cov.out $(pkgs)
 	@echo "Coverage report at out/reports/cov.out"
 
@@ -75,7 +75,7 @@ all: build test ## Builds the binary and runs all tests
 
 .PHONY: run
 run: $(bin) ## Runs the server binary
-	@$(bin)
+	@$(bin) -debug -port 5000 -model gpt-4
 
 ##@ Container Management
 # Convenience targets to run locally containers and
@@ -87,6 +87,17 @@ container: ## Builds the container image
 .PHONY: run-container
 run-container: container ## Runs the container locally
 	docker run --rm -it -p 8080:8080 $(image):$(release)
+
+##@ UI Development
+
+.PHONY: ui
+ui: ## Builds the UI
+	@cd ui/app && npm run build
+	@rm -rf build/ui && mv ui/app/build build/ui
+
+.PHONY: ui-dev
+ui-dev: ## Runs the UI in development mode
+	@cd ui/app && npm start
 
 ##@ TLS Support
 #
