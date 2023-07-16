@@ -11,6 +11,8 @@ import (
 	openai "github.com/sashabaranov/go-openai"
 )
 
+const MaxLogLen = 120
+
 // FIXME: Keeping the messages in memory is not a good idea.
 var (
 	userPrompts []string
@@ -92,6 +94,6 @@ func QueryBot(prompt string) (string, error) {
 
 	totalTokens := resp.Usage.TotalTokens
 	fmt.Printf("Tokens used: %d\n", totalTokens)
-	fmt.Printf("Bot says: %s\n", botSays)
+	fmt.Printf("Bot says: %s\n", botSays[:MaxLogLen])
 	return botSays, nil
 }

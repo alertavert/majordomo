@@ -37,8 +37,21 @@
   }
 }
 
-.footer-copyright {
+.footer {
+  margin-top: 20px;
   margin-left: 10px;
   font-size: 12px;
   color: #720707;
+}
+
+.ask-btn {
+  margin-top: 20px;
+  font-size: 16px;
+  color: #e7ff8d;
+}
+
+.error-box {
+  margin-top: 20px;
+  margin-left: 100px;
+  width: 600px;
 }

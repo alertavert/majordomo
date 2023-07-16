@@ -1,28 +1,29 @@
-import React, { useState } from 'react';
-import './ResizableTextArea.css';
+import React, {useEffect, useState} from 'react';
+import '../styles/ResizableTextArea.css';
 
-const maxRows = 30;
-const initialRows = 16;
 
 // Resizable textarea component
-function ResizableTextArea(props) {
-    const [text, setText] = useState(props.initialValue);
-    const [rows, setRows] = useState(initialRows);
+function ResizableTextArea({value, maxRows = 20}) {
+    const [rows, setRows] = useState(6);
 
-    const handleChange = (event) => {
-        setText(event.target.value);
-    event.target.style.height = 'auto';  // Reset height to calculate the actual scrollHeight
-    event.target.style.height = `${event.target.scrollHeight}px`;  // Set the height to scrollHeight
-
-    }
+    // this updates the row size of the textarea to match the number of lines
+    // of text in the response
+    useEffect(() => {
+        const lineCount = value.split('\n').length;
+        if (lineCount <= maxRows) {
+            setRows(lineCount);
+        } else {
+            setRows(maxRows);
+        }
+    }, [value, maxRows]);
 
     return (
         <textarea
             rows={rows}
-            value={text}
+            value={value}
             className="form-control resizable-textarea"
             readOnly={true}
-            onChange={handleChange}/>
+        />
     );
 }
 

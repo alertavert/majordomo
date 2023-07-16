@@ -1,18 +1,24 @@
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
-import React, {useState} from "react";
+import './App.css';
 
+import React, {useState, useEffect} from "react";
 import Logo from './Components/Logo';
 import ResizableTextArea from './Components/ResizableTextArea';
+import Spinner from './Components/Spinner';
+import ErrorBox from "./Components/ErrorBox";
 
-const botUrl = 'http://localhost:5000/prompt';
+const botUrl = 'http://localhost:5000/gogogo';
 
 function App() {
-
-    const [responseValue, setResponseValue] = useState('');
+    const [responseValue, setResponseValue] = useState('Bot says...');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
     const handleFormSubmit = async (content) => {
-        console.log('content', content)
+        console.log('POSTing:', content)
+        setLoading(true);
+        setError(null);
         try {
             const response = await fetch(botUrl, {
                 method: 'POST',
@@ -21,12 +27,13 @@ function App() {
                 },
                 body: JSON.stringify({prompt: content}),
             });
-
+            setLoading(false);
             if (response.ok) {
                 const data = await response.json();
+                console.log('Received:', data.message.length, 'characters');
                 setResponseValue(data.message);
             } else {
-                console.error('Error:', response.status);
+                setError('Error (' + response.status + '): ' + response.message);
             }
         } catch (error) {
             console.error('Error:', error);
@@ -39,7 +46,10 @@ function App() {
             <Header/>
             <PromptBox onSubmit={handleFormSubmit}/>
             <span className="d-block p-2"/>
-            <ResponseBox responseValue={responseValue}/>
+            <span> {loading ? <Spinner /> : <ResponseBox responseValue={responseValue}/>}</span>
+            <div className='error-box'>
+                { error != '' ? <ErrorBox message={error}/> : null }
+            </div>
             <Footer/>
         </div>
     );
@@ -73,8 +83,8 @@ function PromptBox({onSubmit}) {
                           value={textareaValue}
                           onChange={handleTextareaChange}
                 />
-                <button className="btn btn-primary btn-sm"
-                        onClick={handleSubmit}>Submit
+                <button className="btn btn-primary btn-sm ask-btn"
+                        onClick={handleSubmit}>Ask Majordomo
                 </button>
             </div>
         </div>
@@ -82,11 +92,15 @@ function PromptBox({onSubmit}) {
 }
 
 function ResponseBox({responseValue}) {
+    const [rows, setRows] = useState(5); // just an example row size
+    const maxRows = 25; // assuming maximum rows limit is 10
+
+    console.log('ResponseBox responseValue:', responseValue);
     return (
         <div className="container-fluid">
             <div className="jumbotron">
                 <h6>Response</h6>
-                <ResizableTextArea initialValue={responseValue}/>
+                <ResizableTextArea value={responseValue} />
             </div>
         </div>
     );
@@ -95,9 +109,8 @@ function ResponseBox({responseValue}) {
 
 function Footer() {
     return (
-        <div className="fixed-bottom footer-copyright">
-            <p>&copy; 2023 AlertAvert. All rights
-                reserved.</p>
+        <div>
+            <p className="footer">&copy; 2023 AlertAvert. All rights reserved.</p>
         </div>
     )
 }

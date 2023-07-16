@@ -5,31 +5,25 @@
 package server
 
 import (
-	"github.com/alertavert/gpt4-go/pkg/completions"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"time"
 )
 
-func promptHandler(c *gin.Context) {
+
+func echoHandler(c *gin.Context) {
 	var requestBody PromptRequestBody
 	err := c.ShouldBindJSON(&requestBody)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"response": "error",
-			"message":  "No prompt received",
-		})
-		return
-	}
-	botResponse, err := completions.QueryBot(requestBody.Prompt)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"response": "error",
 			"message":  err.Error(),
 		})
 		return
 	}
+	time.Sleep(1 * time.Second)
 	c.JSON(http.StatusOK, gin.H{
 		"response": "success",
-		"message":  botResponse,
+		"message":  requestBody.Prompt,
 	})
 }

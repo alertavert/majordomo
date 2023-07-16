@@ -1,5 +1,5 @@
 import React from 'react';
-import './Logo.css';
+import '../styles/Logo.css';
 import logo from './AlertAvert-logo.png';
 
 const Logo = () => {
