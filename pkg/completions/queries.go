@@ -11,11 +11,22 @@ import (
 	openai "github.com/sashabaranov/go-openai"
 )
 
-const MaxLogLen = 120
+const (
+	GoDeveloper = "go_developer"
+	WebDesigner = "web_developer"
+
+	MaxLogLen = 120
+)
+
+type PromptRequest struct {
+	Prompt   string `json:"prompt"`
+	Scenario string `json:"scenario"`
+	Session  string `json:"session"`
+}
 
 // FIXME: Keeping the messages in memory is not a good idea.
 var (
-	userPrompts []string
+	userPrompts  []string
 	botResponses []string
 
 	// oaiClient is a singleton instance of the OpenAI client.
@@ -36,14 +47,12 @@ func GetClient() (*openai.Client, error) {
 
 func buildMessages(scenario string) ([]openai.ChatCompletionMessage, error) {
 	messages := make([]openai.ChatCompletionMessage, 0, len(userPrompts)+len(botResponses)+1)
-	m := Scenarios[scenario]
-	if m == "" {
-		return nil, fmt.Errorf("not a valid scenario: '%s'", scenario)
+	if scenario == "" {
+		return nil, fmt.Errorf("the scenario cannot be empty")
 	}
-
 	messages = append(messages, openai.ChatCompletionMessage{
 		Role:    openai.ChatMessageRoleSystem,
-		Content: m,
+		Content: scenario,
 	})
 
 	for i := 0; i < len(userPrompts); i++ {
@@ -54,19 +63,19 @@ func buildMessages(scenario string) ([]openai.ChatCompletionMessage, error) {
 			})
 		if i < len(botResponses) {
 			messages = append(messages,
-			openai.ChatCompletionMessage{
-				Role:    openai.ChatMessageRoleAssistant,
-				Content: userPrompts[i],
-			})
+				openai.ChatCompletionMessage{
+					Role:    openai.ChatMessageRoleAssistant,
+					Content: userPrompts[i],
+				})
 		}
 	}
-
 	return messages, nil
 }
 
-func QueryBot(prompt string) (string, error) {
-	userPrompts = append(userPrompts, prompt)
-	messages, err := buildMessages("go_developer")
+func QueryBot(prompt *PromptRequest) (string, error) {
+	userPrompts = append(userPrompts, prompt.Prompt)
+	scenario := GetScenarios().Scenarios[prompt.Scenario]
+	messages, err := buildMessages(scenario)
 	if err != nil {
 		return "", err
 	}
@@ -78,7 +87,8 @@ func QueryBot(prompt string) (string, error) {
 	resp, err := client.CreateChatCompletion(
 		context.Background(),
 		openai.ChatCompletionRequest{
-			Model:   openai.GPT4,
+			// FIXME: this should be configurable.
+			Model:    openai.GPT4,
 			Messages: messages,
 		})
 
@@ -94,6 +104,10 @@ func QueryBot(prompt string) (string, error) {
 
 	totalTokens := resp.Usage.TotalTokens
 	fmt.Printf("Tokens used: %d\n", totalTokens)
-	fmt.Printf("Bot says: %s\n", botSays[:MaxLogLen])
+	logLen := len(botSays)
+	if logLen > MaxLogLen {
+		logLen = MaxLogLen
+	}
+	fmt.Printf("Bot says: %s\n", botSays[:logLen])
 	return botSays, nil
 }

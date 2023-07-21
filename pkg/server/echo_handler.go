@@ -5,6 +5,7 @@
 package server
 
 import (
+	"github.com/alertavert/gpt4-go/pkg/completions"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"time"
@@ -12,7 +13,7 @@ import (
 
 
 func echoHandler(c *gin.Context) {
-	var requestBody PromptRequestBody
+	var requestBody completions.PromptRequest
 	err := c.ShouldBindJSON(&requestBody)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{

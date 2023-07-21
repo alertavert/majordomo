@@ -11,7 +11,7 @@ import (
 )
 
 func promptHandler(c *gin.Context) {
-	var requestBody PromptRequestBody
+	var requestBody completions.PromptRequest
 	err := c.ShouldBindJSON(&requestBody)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -20,7 +20,9 @@ func promptHandler(c *gin.Context) {
 		})
 		return
 	}
-	botResponse, err := completions.QueryBot(requestBody.Prompt)
+	// TODO: this should actually come from the Client
+	requestBody.Scenario = completions.GoDeveloper
+	botResponse, err := completions.QueryBot(&requestBody)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"response": "error",

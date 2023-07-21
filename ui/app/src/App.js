@@ -8,7 +8,7 @@ import ResizableTextArea from './Components/ResizableTextArea';
 import Spinner from './Components/Spinner';
 import ErrorBox from "./Components/ErrorBox";
 
-const botUrl = 'http://localhost:5000/gogogo';
+const botUrl = 'http://localhost:5000/prompt';
 
 function App() {
     const [responseValue, setResponseValue] = useState('Bot says...');

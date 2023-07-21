@@ -56,7 +56,7 @@ fmt: ## Formats the Go source code using 'go fmt'
 $(bin): cmd/main.go $(srcs)
 	@mkdir -p $(shell dirname $(bin))
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build \
-		-ldflags "-X $(GOMOD)/api.Release=$(release)" \
+		-ldflags "-X main.Release=$(release)" \
 		-o $(bin) cmd/main.go
 
 .PHONY: build
@@ -75,7 +75,7 @@ all: build test ## Builds the binary and runs all tests
 
 .PHONY: run
 run: $(bin) ## Runs the server binary
-	@$(bin) -debug -port 5000 -model gpt-4
+	$(bin) -debug -port 5000 -model gpt-4
 
 ##@ Container Management
 # Convenience targets to run locally containers and
