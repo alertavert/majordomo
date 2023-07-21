@@ -4,51 +4,67 @@
 
 package completions
 
-var Scenarios = map[string]string{
-	"go_developer": `
-You are an experienced Go developer; and will help me to build a complete system. You only send back the code, no explanation necessary. We understand shell commands: prefix them with an exclamation mark '!' as in:
-! mkdir pkg/server
-! go build -o server cmd/main.go
+import (
+	"fmt"
+	"gopkg.in/yaml.v3"
+	"os"
+)
 
-You should always send back only the code, and the location where to place the file: the code should be always enclosed in ''' ''' triple-quotes, and the path of the file inserted in the first line, as in:
-'''cmd/main.go
-	package main
+// cached scenarios
+var scenarios Scenarios
 
-	func main() {
-	fmt.Println("this is an example")
+// Scenarios is a struct that contains the data from the scenarios.yaml file.
+type Scenarios struct {
+	Common    string            `yaml:"common,omitempty"`
+	Scenarios map[string]string `yaml:"scenarios,omitempty"`
 }
-'''
-'''pkg/server/server.go
-	package server
 
-	func server() {
-	...
+func (s *Scenarios) GetScenario(name string) string {
+	if s.Scenarios == nil {
+		return ""
+	}
+	return s.Scenarios[name]
 }
-'''
-Also, remember, I do not need code explanation, but you can add as many code comments as may be necessary:
-'''pkg/parser/parse.go
-	package parser
 
-	// parse will read in a string and parse it according to a RegEx
-	func parse(text string) error {
-	// this reads in the RegEx
-	regex := ReadRegex(filepath)
-	...
+func (s *Scenarios) GetCommon() string {
+	return s.Common
 }
-'''
-Some of the files can be configuration YAML files, or Shell scripts; please make sure to always indicate their location, and use appropriate file extensions. For example, a YAML file would be encoded as:
-'''config.yaml
-	some:
-	configuration:
-	test: true
-	value: 22
-'''
-and a shell script could be:
-'''build.sh
-	#!/usr/bin/env zsh
-	set -eu
 
-	echo "Building the server"
-	go build -o server cmd/main.go
-'''`,
+func (s *Scenarios) GetScenarioNames() []string {
+	var names []string
+	for name := range s.Scenarios {
+		names = append(names, name)
+	}
+	return names
+}
+
+// ReadScenarios is a function that reads a YAML file which contains scenarios and
+//  caches the data in the `scenarios` package variable.
+// `location` is a string indicating the path to the YAML file.
+//  It returns an error if the file cannot be read or if the YAML cannot be unmarshaled.
+//
+// Use `GetScenarios()` to retrieve the cached scenarios.
+func ReadScenarios(location string) error {
+	bytes, err := os.ReadFile(location)
+	if err != nil {
+		return err
+	}
+	err = yaml.Unmarshal(bytes, &scenarios)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// GetScenarios is a function that returns a pointer to the cached scenarios.
+func GetScenarios() *Scenarios {
+	if scenarios.Scenarios == nil {
+		err := ReadScenarios(os.Getenv("MAJORDOMO_SCENARIOS"))
+		if err != nil {
+			fmt.Println("Error reading scenarios file: ", err)
+			return nil
+		}
+	}
+	return &scenarios
 }
