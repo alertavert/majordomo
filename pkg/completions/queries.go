@@ -33,7 +33,7 @@ var (
 	userPrompts  []string
 	botResponses []string
 
-	// oaiClient is a singleton instance of the OpenAI client.
+	// oaiClient is an instance of the OpenAI client.
 	oaiClient *openai.Client
 )
 
@@ -101,11 +101,9 @@ func QueryBot(prompt *PromptRequest) (string, error) {
 			Model:    openai.GPT4,
 			Messages: messages,
 		})
-
 	if err != nil {
 		return "", fmt.Errorf("error querying chatbot: %v", err)
 	}
-
 	if stopReason := resp.Choices[0].FinishReason; stopReason != "stop" {
 		return "", fmt.Errorf("stopped for reason other than done: %s", stopReason)
 	}

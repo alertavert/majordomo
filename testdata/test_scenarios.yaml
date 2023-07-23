@@ -1,0 +1,18 @@
+# Copyright (c) 2023 AlertAvert.com. All rights reserved.
+# Author: Marco Massenzio (marco@alertavert.com)
+
+common: |
+  common test scenario
+scenarios:
+  dev:  |
+    You are an experienced Go developer; 
+    and a shell script could be:
+    '''scripts/build.sh
+        #!/usr/bin/env zsh
+        set -eu
+    
+        echo "Building the server"
+        go build -o server cmd/main.go
+    '''
+  test: |
+    This is a test scenario
