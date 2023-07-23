@@ -5,7 +5,6 @@
 package completions
 
 import (
-	"fmt"
 	"gopkg.in/yaml.v3"
 	"os"
 )
@@ -53,18 +52,15 @@ func ReadScenarios(location string) error {
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
 // GetScenarios is a function that returns a pointer to the cached scenarios.
-func GetScenarios() *Scenarios {
+// It returns `nil` if the scenarios have not been cached yet.
+// We allow for `monkey patching` of this function for testing purposes.
+var GetScenarios = func () *Scenarios {
 	if scenarios.Scenarios == nil {
-		err := ReadScenarios(os.Getenv("MAJORDOMO_SCENARIOS"))
-		if err != nil {
-			fmt.Println("Error reading scenarios file: ", err)
-			return nil
-		}
+		return nil
 	}
 	return &scenarios
 }

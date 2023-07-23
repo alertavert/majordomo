@@ -7,6 +7,7 @@ package server
 import (
 	"github.com/alertavert/gpt4-go/pkg/completions"
 	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog/log"
 	"net/http"
 )
 
@@ -20,16 +21,21 @@ func promptHandler(c *gin.Context) {
 		})
 		return
 	}
-	// TODO: this should actually come from the Client
-	requestBody.Scenario = completions.GoDeveloper
+	if requestBody.Scenario == "" {
+		log.Debug().Msg("No scenario specified, using default")
+		requestBody.Scenario = completions.GoDeveloper
+	}
+
 	botResponse, err := completions.QueryBot(&requestBody)
 	if err != nil {
+		log.Error().Err(err).Msg("Error querying bot")
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"response": "error",
 			"message":  err.Error(),
 		})
 		return
 	}
+	log.Debug().Msgf("Bot Says: %s", botResponse)
 	c.JSON(http.StatusOK, gin.H{
 		"response": "success",
 		"message":  botResponse,

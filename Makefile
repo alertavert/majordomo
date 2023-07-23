@@ -52,7 +52,7 @@ fmt: ## Formats the Go source code using 'go fmt'
 	@go fmt $(pkgs) ./cmd
 
 ##@ Development
-.PHONY: build test container cov clean fmt
+.PHONY: container cov clean fmt
 $(bin): cmd/main.go $(srcs)
 	@mkdir -p $(shell dirname $(bin))
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build \
@@ -62,8 +62,13 @@ $(bin): cmd/main.go $(srcs)
 .PHONY: build
 build: $(bin) ## Builds the Statemachine server binary
 
+.PHONY: test
 test: $(srcs) $(test_srcs)  ## Runs all tests
 	ginkgo -p $(pkgs)
+
+.PHONY: watch
+watch: $(srcs) $(test_srcs)  ## Runs all tests every time a source or test file changes
+	ginkgo watch -p $(pkgs)
 
 cov: $(srcs) $(test_srcs)  ## Runs the Test Coverage and saves the coverage report to out/reports/cov.out
 	@mkdir -p build/reports

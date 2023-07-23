@@ -5,42 +5,31 @@
 package server
 
 import (
-	"fmt"
-	"github.com/alertavert/gpt4-go/pkg/completions"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/sashabaranov/go-openai"
 	"net/http"
-
-	"github.com/alertavert/gpt4-go/pkg/config"
 )
 
 type Server struct {
-	oaiClient *openai.Client
 	router *gin.Engine
-	config *config.Config
 }
 
 var server *Server
 
-func Setup() error {
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		return fmt.Errorf("error loading config: %w", err)
-	}
-
-	client := openai.NewClient(cfg.OpenAIApiKey)
+func Setup(debug bool) *Server {
 	server = &Server{
-		oaiClient: client,
 		router: gin.Default(),
-		config: &cfg,
+	}
+	if debug {
+		gin.SetMode(gin.DebugMode)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
 	}
 	server.router.Use(cors.Default())
 	setupHandlers(server.router)
-	err = completions.ReadScenarios(cfg.ScenariosLocation)
-	return err
+	return server
 }
 
-func Run(addr string) error {
+func (server *Server) Run(addr string) error {
 	return http.ListenAndServe(addr, server.router)
 }

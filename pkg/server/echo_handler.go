@@ -11,7 +11,8 @@ import (
 	"time"
 )
 
-
+// echoHandler is a simple handler that echoes back the prompt it receives
+// after a 1-second delay.
 func echoHandler(c *gin.Context) {
 	var requestBody completions.PromptRequest
 	err := c.ShouldBindJSON(&requestBody)

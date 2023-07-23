@@ -7,9 +7,10 @@ package config
 import (
 	"fmt"
 	"gopkg.in/yaml.v3"
-	"io/ioutil"
 	"os"
 )
+
+var DefaultConfigLocation = os.Getenv("HOME") + "/.majordomo/config.yaml"
 
 type Config struct {
 	OpenAIApiKey string `yaml:"api_key"`
@@ -21,10 +22,10 @@ func LoadConfig() (Config, error) {
 
 	filePath := os.Getenv("MAJORDOMO_CONFIG")
 	if filePath == "" {
-		filePath = os.Getenv("HOME") + "/.openai/config.yaml"
+		filePath = DefaultConfigLocation
 	}
 
-	data, err := ioutil.ReadFile(filePath)
+	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return c, fmt.Errorf("error reading config file: %w", err)
 	}
