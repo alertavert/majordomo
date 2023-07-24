@@ -95,6 +95,10 @@ run-container: container ## Runs the container locally
 
 ##@ UI Development
 
+.PHONY: ui-setup
+ui-setup:
+	@cd ui/app && npm install
+
 .PHONY: ui
 ui: ## Builds the UI
 	@cd ui/app && npm run build
