@@ -2,25 +2,96 @@ import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import './App.css';
 
-import React, {useState, useEffect} from "react";
+import React, {useState, useEffect, useRef} from "react";
 import Logo from './Components/Logo';
 import ResizableTextArea from './Components/ResizableTextArea';
 import Spinner from './Components/Spinner';
 import ErrorBox from "./Components/ErrorBox";
 
-const botUrl = 'http://localhost:5000/prompt';
+// MicRecorder for Audio Recording
+import MicRecorder from 'mic-recorder-to-mp3';
+import AudioRecorder from './Components/AudioRecorder';
+
+
+// FIXME: this should not be used, but the UI served directly from the host.
+const MajordomoServerUrl = 'http://localhost:5000';
+const SpeechApiUrl = MajordomoServerUrl + '/command';
+const PromptApiUrl = MajordomoServerUrl + '/prompt';
+
+const Mp3Recorder = new MicRecorder({ bitRate: 128 });
 
 function App() {
     const [responseValue, setResponseValue] = useState('Bot says...');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
+    const [isRecording, setIsRecording] = useState(false);
+    const [isBlocked, setIsBlocked] = useState(false);
+    const [blobURL, setBlobURL] = useState('');
+
+    const [textareaValue, setTextareaValue] = useState('');
+    const refTextAreaValue = useRef(textareaValue);
+    refTextAreaValue.current = textareaValue;
+
+    const startRecording = async () => {
+        setError(null);
+        if (isBlocked) {
+            setError('Please give permission for using microphone');
+        } else {
+            Mp3Recorder.start().then(() => {
+                setIsRecording(true);
+            }).catch((e) => setError(e));
+        }
+    };
+
+    const stopRecording = async () => {
+        setError(null);
+        setIsRecording(false);
+        Mp3Recorder
+            .stop()
+            .getMp3()
+            .then(async([buffer, blob]) => {
+                const blobURL = URL.createObjectURL(blob)
+                setBlobURL(blobURL);
+                // Send the blob to the server here or in separate function
+                try {
+                    let formData = new FormData();
+                    formData.append('audio', blob, 'audio.mp3');
+                    const response = await fetch(SpeechApiUrl, {
+                        method: 'POST',
+                        body: formData,
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('Received:', data.message.length, 'characters');
+                        setTextareaValue(data.message);
+                    } else {
+                        setError('Error (' + response.status + '): ' + response.message);
+                    }
+                } catch (error) {
+                    setError('Cannot POST Audio: ' + error);
+                }
+            }).catch((e) => setError(e));
+    };
+
+    useEffect(() => {
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(function(stream) {
+                console.log('Permission Granted');
+                setIsBlocked(false);
+            })
+            .catch(function(err) {
+                console.log('Permission Denied');
+                setIsBlocked(true);
+            });
+    }, []);
+
     const handleFormSubmit = async (content) => {
-        console.log('POSTing:', content)
+        console.log('Sending Query to Majordomo (' + content.length + ' chars)')
         setLoading(true);
         setError(null);
         try {
-            const response = await fetch(botUrl, {
+            const response = await fetch(PromptApiUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -44,11 +115,19 @@ function App() {
         <div className="container">
             <Logo/>
             <Header/>
-            <PromptBox onSubmit={handleFormSubmit}/>
+            <AudioRecorder
+                startRecording={startRecording}
+                stopRecording={stopRecording}
+                isRecording={isRecording}
+            />
+            <PromptBox
+                onSubmit={handleFormSubmit}
+                textareaValue={refTextAreaValue.current}
+                setTextareaValue={setTextareaValue}/>
             <span className="d-block p-2"/>
             <span> {loading ? <Spinner /> : <ResponseBox responseValue={responseValue}/>}</span>
             <div className='error-box'>
-                { error != '' ? <ErrorBox message={error}/> : null }
+                { error !== '' ? <ErrorBox message={error}/> : null }
             </div>
             <Footer/>
         </div>
@@ -63,8 +142,8 @@ function Header() {
     );
 }
 
-function PromptBox({onSubmit}) {
-    const [textareaValue, setTextareaValue] = useState('');
+function PromptBox({onSubmit, textareaValue, setTextareaValue}) {
+    // const [textareaValue, setTextareaValue] = useState('');
 
     const handleSubmit = async () => {
         onSubmit(textareaValue);
@@ -77,7 +156,7 @@ function PromptBox({onSubmit}) {
     return (
         <div className="container-fluid">
             <div className="jumbotron">
-                <h6>Prompt</h6>
+                <h6>Your request:</h6>
                 <textarea className="form-control"
                           style={{height: '200px'}}
                           value={textareaValue}

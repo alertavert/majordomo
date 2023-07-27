@@ -50,6 +50,20 @@
   color: #e7ff8d;
 }
 
+.record-btn {
+  margin-top: 20px;
+  font-size: 16px;
+  background: #28661b;
+  color: #e7ff8d;
+}
+
+.stop-btn {
+  margin-top: 20px;
+  font-size: 16px;
+  background: #720707;
+  color: #e7ff8d;
+}
+
 .error-box {
   margin-top: 20px;
   margin-left: 100px;

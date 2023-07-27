@@ -9,8 +9,9 @@ import (
 )
 
 func setupHandlers(r *gin.Engine) {
-	r.POST("/prompt", promptHandler)
+	r.POST("/command", audioHandler)
 	r.POST("/echo", echoHandler)
+	r.POST("/prompt", promptHandler)
 	r.GET("/scenarios", scenariosHandler)
 	r.Static("/web", "build/ui")
 }

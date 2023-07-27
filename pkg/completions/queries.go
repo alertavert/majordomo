@@ -7,7 +7,9 @@ package completions
 import (
 	"context"
 	"fmt"
+	"github.com/rs/zerolog/log"
 	openai "github.com/sashabaranov/go-openai"
+	"mime/multipart"
 )
 
 const (
@@ -19,13 +21,13 @@ const (
 
 type PromptRequest struct {
 	// The user prompt.
-	Prompt   string `json:"prompt"`
+	Prompt string `json:"prompt"`
 	// The scenario to use (selected by the user).
 	Scenario string `json:"scenario"`
 	// The session ID (if any) to keep track of past prompts/responses in the conversation.
-	Session  string `json:"session,omitempty"`
+	Session string `json:"session,omitempty"`
 	// The LLM model to use (selected by the user).
-	Model    string `json:"model,omitempty"`
+	Model string `json:"model,omitempty"`
 }
 
 // FIXME: Keeping the messages in memory is not a good idea.
@@ -44,7 +46,7 @@ func SetClient(client *openai.Client) {
 
 func BuildMessages(prompt *PromptRequest) ([]openai.ChatCompletionMessage, error) {
 	messages := make([]openai.ChatCompletionMessage, 0,
-		len(userPrompts) + len(botResponses) + 3)
+		len(userPrompts)+len(botResponses)+3)
 	s := GetScenarios()
 	if s == nil {
 		return nil, fmt.Errorf("no scenarios found")
@@ -110,12 +112,24 @@ func QueryBot(prompt *PromptRequest) (string, error) {
 	botSays := resp.Choices[0].Message.Content
 	botResponses = append(botResponses, botSays)
 
-	totalTokens := resp.Usage.TotalTokens
-	fmt.Printf("Tokens used: %d\n", totalTokens)
-	logLen := len(botSays)
-	if logLen > MaxLogLen {
-		logLen = MaxLogLen
-	}
-	fmt.Printf("Bot says: %s\n", botSays[:logLen])
+	log.Debug().
+		Int("tokens", resp.Usage.TotalTokens).
+		Int("conversation_len", len(messages)).
+		Int("response_len", len(botSays)).Send()
 	return botSays, nil
+}
+
+func SpeechToText(audioFile multipart.File) (string, error) {
+	resp, err := oaiClient.CreateTranscription(
+		context.Background(),
+		openai.AudioRequest{
+			Model:    openai.Whisper1,
+			FilePath: "audio.mp3",
+			Reader:   audioFile,
+			Format:   openai.AudioResponseFormatText,
+		})
+	if err != nil {
+		return "", fmt.Errorf("error converting audio to text: %v", err)
+	}
+	return resp.Text, nil
 }

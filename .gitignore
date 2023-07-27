@@ -5,12 +5,16 @@
 *.out
 coverage/
 
-# Ignored directories (remove the comment below to include it)
+# Build and output directories
 vendor/
 .idea/
 build/
 bin/
 tmp/
+dist/
+
+# Staging folder for code suggestions from Majordomo
+staging/
 
 # Protobuf Generated code
 *.pb.go

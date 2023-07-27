@@ -35,7 +35,7 @@ func promptHandler(c *gin.Context) {
 		})
 		return
 	}
-	log.Debug().Msgf("Bot Says: %s", botResponse)
+	log.Debug().Msg("returning response")
 	c.JSON(http.StatusOK, gin.H{
 		"response": "success",
 		"message":  botResponse,
