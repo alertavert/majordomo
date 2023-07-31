@@ -7,6 +7,7 @@ import Logo from './Components/Logo';
 import ResizableTextArea from './Components/ResizableTextArea';
 import Spinner from './Components/Spinner';
 import ErrorBox from "./Components/ErrorBox";
+import TopSelector from './Components/TopSelector';
 
 // MicRecorder for Audio Recording
 import MicRecorder from 'mic-recorder-to-mp3';
@@ -17,6 +18,7 @@ import AudioRecorder from './Components/AudioRecorder';
 const MajordomoServerUrl = 'http://localhost:5000';
 const SpeechApiUrl = MajordomoServerUrl + '/command';
 const PromptApiUrl = MajordomoServerUrl + '/prompt';
+const ScenariosApiUrl = MajordomoServerUrl + '/scenarios';
 
 const Mp3Recorder = new MicRecorder({ bitRate: 128 });
 
@@ -32,6 +34,10 @@ function App() {
     const [textareaValue, setTextareaValue] = useState('');
     const refTextAreaValue = useRef(textareaValue);
     refTextAreaValue.current = textareaValue;
+
+    // Scenarios to choose from
+    // TODO: fill in by hitting the /scenarios API.
+    let Scenarios = ["GoLang Dev", "Web Dev"];
 
     const startRecording = async () => {
         setError(null);
@@ -66,7 +72,9 @@ function App() {
                         console.log('Received:', data.message.length, 'characters');
                         setTextareaValue(data.message);
                     } else {
-                        setError('Error (' + response.status + '): ' + response.message);
+                        const errorData = await response.json(); // Parse the error response as JSON
+                        setError('Error (' + response.status + '): ' + errorData.message); // Show the content of the error message
+                        // setError('Error (' + response.status + '): ' + response.message);
                     }
                 } catch (error) {
                     setError('Cannot POST Audio: ' + error);
@@ -90,6 +98,7 @@ function App() {
         console.log('Sending Query to Majordomo (' + content.length + ' chars)')
         setLoading(true);
         setError(null);
+        setResponseValue('Bot says...')
         try {
             const response = await fetch(PromptApiUrl, {
                 method: 'POST',
@@ -104,7 +113,7 @@ function App() {
                 console.log('Received:', data.message.length, 'characters');
                 setResponseValue(data.message);
             } else {
-                setError('Error (' + response.status + '): ' + response.message);
+                setError('Error (' + response.status + '): ' + response.statusText);
             }
         } catch (error) {
             console.error('Error:', error);
@@ -115,6 +124,7 @@ function App() {
         <div className="container">
             <Logo/>
             <Header/>
+            <TopSelector scenarios={Scenarios}/>
             <AudioRecorder
                 startRecording={startRecording}
                 stopRecording={stopRecording}
