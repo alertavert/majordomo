@@ -17,6 +17,8 @@ const (
 	WebDesigner = "web_developer"
 
 	MaxLogLen = 120
+
+	DefaultModel = openai.GPT4
 )
 
 type PromptRequest struct {
@@ -95,23 +97,38 @@ func QueryBot(prompt *PromptRequest) (string, error) {
 	if oaiClient == nil {
 		return "", fmt.Errorf("OpenAI client not initialized")
 	}
-	fmt.Printf("Sending %d conversational items\n", len(messages))
+	if prompt.Model == "" {
+		log.Debug().Msg("using default model")
+		prompt.Model = DefaultModel
+	}
+	log.Debug().
+		Int("items", len(messages)).
+		Str("model", prompt.Model).
+		Msg("querying LLM")
+
 	resp, err := oaiClient.CreateChatCompletion(
 		context.Background(),
 		openai.ChatCompletionRequest{
-			// FIXME: this should be configurable.
-			Model:    openai.GPT4,
+			Model:    prompt.Model,
 			Messages: messages,
 		})
 	if err != nil {
 		return "", fmt.Errorf("error querying chatbot: %v", err)
 	}
-	if stopReason := resp.Choices[0].FinishReason; stopReason != "stop" {
+	stopReason := resp.Choices[0].FinishReason
+	if stopReason != "stop" {
+		if stopReason == "length" {
+			log.Debug().Msg("too many tokens, response truncated")
+			botResponses = botResponses[1:]
+			userPrompts = userPrompts[1:]
+			return "", fmt.Errorf("too many tokens (%d), "+
+				"dropped older conversations. Please re-send the request, "+
+				"or consider starting a new conversation", resp.Usage.TotalTokens)
+		}
 		return "", fmt.Errorf("stopped for reason other than done: %s", stopReason)
 	}
 	botSays := resp.Choices[0].Message.Content
 	botResponses = append(botResponses, botSays)
-
 	log.Debug().
 		Int("tokens", resp.Usage.TotalTokens).
 		Int("conversation_len", len(messages)).
@@ -132,4 +149,10 @@ func SpeechToText(audioFile multipart.File) (string, error) {
 		return "", fmt.Errorf("error converting audio to text: %v", err)
 	}
 	return resp.Text, nil
+}
+
+// RemoveConversation deleted all past responses and prompts
+func RemoveConversation() {
+	userPrompts = userPrompts[:0]
+	botResponses = botResponses[:0]
 }

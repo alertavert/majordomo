@@ -5,6 +5,7 @@
 package parser_test
 
 import (
+	"fmt"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -66,9 +67,7 @@ var _ = Describe("Parser", func() {
 			sourceCode := make(map[string]string)
 			sourceCode["path/to/file.go"] = "this is the content"
 			expectedResult := "'''path/to/file.go\nthis is the content'''"
-
 			result, err := parser.InsertSourceCode(text, sourceCode)
-
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result).To(Equal(expectedResult))
 		})
@@ -76,11 +75,27 @@ var _ = Describe("Parser", func() {
 		It("Should return error if no content found in SourceCode", func() {
 			text := "'''path/to/file.go\n'''"
 			sourceCode := make(map[string]string)
-
 			_, err := parser.InsertSourceCode(text, sourceCode)
-
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("no source code found for path: path/to/file.go"))
+		})
+		It("Should insert multiple snippets", func() {
+			text := `Some intro text
+'''path/to/file.go
+%s'''
+Some random text:
+'''path/to/file2.go
+%s'''
+and some more text.`
+			sourceCode := map[string]string{
+				"path/to/file.go":  "this is the content\nof the first file\n",
+				"path/to/file2.go": "this is the content\nof the second file\n",
+			}
+			result, err := parser.InsertSourceCode(fmt.Sprintf(text, "", ""), sourceCode)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).To(Equal(fmt.Sprintf(text,
+				"this is the content\nof the first file\n",
+				"this is the content\nof the second file\n")))
 		})
 	})
 })

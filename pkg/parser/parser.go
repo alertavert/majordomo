@@ -31,14 +31,10 @@ func ParseBotResponse(botSays string) (SourceCode, error) {
 	return sourceCode, nil
 }
 
-// InsertSourceCode inserts the code snippets into botSays text
-func InsertSourceCode(botSays string, sourceCode SourceCode) (string, error) {
+// InsertSourceCode inserts the code snippets into prompt text
+func InsertSourceCode(prompt string, sourceCode SourceCode) (string, error) {
 	snippetRegex := regexp.MustCompile(`'''([\w/.]+?)\n'''`)
-	matches := snippetRegex.FindAllStringSubmatch(botSays, -1)
-
-	if len(matches) == 0 {
-		return botSays, nil
-	}
+	matches := snippetRegex.FindAllStringSubmatch(prompt, -1)
 
 	for _, match := range matches {
 		filePath := match[1]
@@ -47,7 +43,9 @@ func InsertSourceCode(botSays string, sourceCode SourceCode) (string, error) {
 			// TODO: before returning an error, we should probably try to fetch the file from disk.
 			return "", errors.New(fmt.Sprintf("no source code found for path: %s", filePath))
 		}
-		botSays = snippetRegex.ReplaceAllLiteralString(botSays, fmt.Sprintf("'''%s\n%s'''", filePath, content))
+		replacementRegex := regexp.MustCompile(fmt.Sprintf(`'''%s\n'''`, filePath))
+		prompt = replacementRegex.ReplaceAllLiteralString(prompt,
+			fmt.Sprintf("'''%s\n%s'''", filePath, content))
 	}
-	return botSays, nil
+	return prompt, nil
 }
