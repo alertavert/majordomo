@@ -7,7 +7,14 @@ package parser
 import (
 	"errors"
 	"fmt"
+	"io"
+	"os"
 	"regexp"
+)
+
+const (
+	ErrorNoCodeSnippetsFound = "no code found for %s: %v"
+	ErrorReadingCodeSnippet  = "error while reading %s: %v"
 )
 
 // SourceCode is a map of file paths to their contents
@@ -32,16 +39,19 @@ func ParseBotResponse(botSays string) (SourceCode, error) {
 }
 
 // InsertSourceCode inserts the code snippets into prompt text
-func InsertSourceCode(prompt string, sourceCode SourceCode) (string, error) {
+func InsertSourceCode(prompt string) (string, error) {
 	snippetRegex := regexp.MustCompile(`'''([\w/.]+?)\n'''`)
 	matches := snippetRegex.FindAllStringSubmatch(prompt, -1)
 
 	for _, match := range matches {
 		filePath := match[1]
-		content, ok := sourceCode[filePath]
-		if !ok {
-			// TODO: before returning an error, we should probably try to fetch the file from disk.
-			return "", errors.New(fmt.Sprintf("no source code found for path: %s", filePath))
+		f, err := os.Open(filePath)
+		if err != nil {
+			return "", errors.New(fmt.Sprintf(ErrorNoCodeSnippetsFound, filePath, err))
+		}
+		content, err := io.ReadAll(f)
+		if err != nil {
+			return "", errors.New(fmt.Sprintf(ErrorReadingCodeSnippet, filePath, err))
 		}
 		replacementRegex := regexp.MustCompile(fmt.Sprintf(`'''%s\n'''`, filePath))
 		prompt = replacementRegex.ReplaceAllLiteralString(prompt,

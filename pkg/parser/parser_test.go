@@ -12,6 +12,26 @@ import (
 	"github.com/alertavert/gpt4-go/pkg/parser"
 )
 
+const (
+	f1 = `package testdata
+
+func test(s string) error {
+	return nil
+}
+`
+	f2 = `package testdata
+
+import (
+	"io"
+	"os"
+)
+
+func anoter(f *os.File) ([]byte, error) {
+	return io.ReadAll(f)
+}
+`
+)
+
 var _ = Describe("ParseBotResponse", func() {
 	It("should return an error when no valid code snippets are found", func() {
 		sourceCode, err := parser.ParseBotResponse("This is not a code snippet")
@@ -63,39 +83,31 @@ var _ = Describe("ParseBotResponse", func() {
 var _ = Describe("Parser", func() {
 	Context("InsertSourceCode", func() {
 		It("Should return the right file content", func() {
-			text := "'''path/to/file.go\n'''"
-			sourceCode := make(map[string]string)
-			sourceCode["path/to/file.go"] = "this is the content"
-			expectedResult := "'''path/to/file.go\nthis is the content'''"
-			result, err := parser.InsertSourceCode(text, sourceCode)
+			text := "'''../../testdata/test1.go\n'''"
+			expectedResult := fmt.Sprintf("'''../../testdata/test1.go\n%s'''", f1)
+			result, err := parser.InsertSourceCode(text)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result).To(Equal(expectedResult))
 		})
 
-		It("Should return error if no content found in SourceCode", func() {
+		It("Should return error if file not found", func() {
 			text := "'''path/to/file.go\n'''"
-			sourceCode := make(map[string]string)
-			_, err := parser.InsertSourceCode(text, sourceCode)
+			_, err := parser.InsertSourceCode(text)
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(Equal("no source code found for path: path/to/file.go"))
+			Expect(err.Error()).To(HavePrefix(fmt.Sprintf(parser.ErrorNoCodeSnippetsFound,
+				"path/to/file.go", "")))
 		})
 		It("Should insert multiple snippets", func() {
 			text := `Some intro text
-'''path/to/file.go
+'''../../testdata/test1.go
 %s'''
 Some random text:
-'''path/to/file2.go
+'''../../testdata/test2.go
 %s'''
 and some more text.`
-			sourceCode := map[string]string{
-				"path/to/file.go":  "this is the content\nof the first file\n",
-				"path/to/file2.go": "this is the content\nof the second file\n",
-			}
-			result, err := parser.InsertSourceCode(fmt.Sprintf(text, "", ""), sourceCode)
+			result, err := parser.InsertSourceCode(fmt.Sprintf(text, "", ""))
 			Expect(err).NotTo(HaveOccurred())
-			Expect(result).To(Equal(fmt.Sprintf(text,
-				"this is the content\nof the first file\n",
-				"this is the content\nof the second file\n")))
+			Expect(result).To(Equal(fmt.Sprintf(text, f1, f2)))
 		})
 	})
 })
