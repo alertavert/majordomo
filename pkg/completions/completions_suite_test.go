@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2023 AlertAvert.com. All rights reserved.
+ */
+
 package completions_test
 
 import (

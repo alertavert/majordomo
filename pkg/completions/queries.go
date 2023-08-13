@@ -8,17 +8,15 @@ import (
 	"context"
 	"fmt"
 	"github.com/rs/zerolog/log"
-	openai "github.com/sashabaranov/go-openai"
+	"github.com/sashabaranov/go-openai"
 	"mime/multipart"
 )
 
 const (
-	GoDeveloper = "go_developer"
-	WebDesigner = "web_developer"
-
-	MaxLogLen = 120
-
 	DefaultModel = openai.GPT4
+	GoDeveloper = "go_developer"
+	MaxLogLen = 120
+	WebDesigner = "web_developer"
 )
 
 type PromptRequest struct {
@@ -98,7 +96,7 @@ func QueryBot(prompt *PromptRequest) (string, error) {
 		return "", fmt.Errorf("OpenAI client not initialized")
 	}
 	if prompt.Model == "" {
-		log.Debug().Msg("using default model")
+		log.Debug().Msgf("using default model %s", DefaultModel)
 		prompt.Model = DefaultModel
 	}
 	log.Debug().
