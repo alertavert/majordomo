@@ -81,14 +81,20 @@ var _ = Describe("Prompt Parser", func() {
 		var parser preprocessors.Parser
 		BeforeEach(func() {
 			parser = preprocessors.Parser{CodeMap: make(preprocessors.SourceCodeMap)}
-			parser.CodeMap["pkg/server/prompt_handler.go"] = f1
-			parser.CodeMap["pkg/server/server.go"] = f2
 			Expect(len(parser.CodeMap)).To(Equal(2))
 		})
 
 		It("should successfully fill in the correct content from the source code map", func() {
 			prompt := fmt.Sprintf(br1, "", "")
-			parsed, err := parser.ParsePrompt(prompt)
+			parser.ParsePrompt(prompt)
+			Expect(parser.CodeMap).NotTo(BeEmpty())
+			_, found := parser.CodeMap["pkg/server/prompt_handler.go"]
+			Expect(found).To(BeTrue())
+			_, found = parser.CodeMap["pkg/server/server.go"]
+			Expect(found).To(BeTrue())
+			parser.CodeMap["pkg/server/prompt_handler.go"] = f1
+			parser.CodeMap["pkg/server/server.go"] = f2
+			parsed, err := parser.FillPrompt(prompt)
 			Expect(err).ShouldNot(HaveOccurred())
 			expected := fmt.Sprintf(br1, f1, f2)
 			Expect(parsed).To(Equal(expected))
@@ -101,7 +107,7 @@ some_code: "that has no file path"
   should: "not be parsed"
 '''
 `
-			parsed, err := parser.ParsePrompt(prompt)
+			parsed, err := parser.FillPrompt(prompt)
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(parsed).To(Equal(prompt))
 		})
@@ -117,7 +123,7 @@ some_code: "that has no file path"
 		PIt("should return an error when missing closing triple-quotes")
 		PIt("should return an error when opening triple-quotes are not followed by a file path")
 		PIt("should return an error when the file path is malformed")
-		It("should return an error when the file path is not found in the map", func() {
+		It("should not return an error when the code snippet is inserted manually", func() {
 			prompt := `some text
 and more text:
 '''foo/bar.yaml
@@ -125,9 +131,21 @@ some_code: "that does not match a file path"
   should: "not fail"
 '''
 `
-			_, err := parser.ParsePrompt(prompt)
+			parser.ParsePrompt(prompt)
+			actual, err := parser.FillPrompt(prompt)
 			Expect(err).ShouldNot(HaveOccurred())
-
+			Expect(actual).To(Equal(prompt))
+		})
+		It("should return an error when file path does not exist", func() {
+			prompt := `some text
+This shouldn't work:
+'''foo/bar.yaml
+'''
+`
+			parser.ParsePrompt(prompt)
+			// doing nothing here, is equivalent to not finding the file path
+			_, err := parser.FillPrompt(prompt)
+			Expect(err).Should(HaveOccurred())
 		})
 	})
 })

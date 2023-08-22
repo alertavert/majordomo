@@ -77,8 +77,17 @@ func (p *Parser) ParseBotResponse(botSays string) error {
 	return nil
 }
 
-// ParsePrompt inserts the code snippets into prompt text
-func (p *Parser) ParsePrompt(prompt string) (string, error) {
+// ParsePrompt finds all the code snippets in the prompt and extracts their paths
+// from the prompt to prepare the CodeMap to be populated by a CodeStoreHandler.
+func (p *Parser) ParsePrompt(prompt string) {
+	matches := promptRegex.FindAllStringSubmatch(prompt, -1)
+	for _, match := range matches {
+		p.CodeMap[match[1]] = ""
+	}
+}
+
+// FillPrompt fills in the code snippets in the prompt, given their file paths.
+func (p *Parser) FillPrompt(prompt string) (string, error) {
 	matches := promptRegex.FindAllStringSubmatch(prompt, -1)
 
 	for _, match := range matches {
@@ -86,7 +95,7 @@ func (p *Parser) ParsePrompt(prompt string) (string, error) {
 		content, found := p.CodeMap[filePath]
 		if !found {
 			return "", errors.New(fmt.Sprintf(ErrorNoCodeSnippetsFound, filePath,
-				"not entry in map"))
+				"no entry in map"))
 		}
 		replacementRegex := regexp.MustCompile(fmt.Sprintf(`'''%s\n'''`, filePath))
 		prompt = replacementRegex.ReplaceAllLiteralString(prompt,
