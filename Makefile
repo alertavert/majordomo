@@ -41,7 +41,7 @@ help: ## Display this help.
 .PHONY: clean
 img=$(shell docker images -q --filter=reference=$(image))
 clean: ## Cleans up the binary, container image and other data
-	@rm -f $(bin)
+	@rm -rf build/*
 	@[ ! -z $(img) ] && docker rmi $(img) || true
 	@rm -rf certs
 
@@ -52,7 +52,6 @@ fmt: ## Formats the Go source code using 'go fmt'
 	@go fmt $(pkgs) ./cmd
 
 ##@ Development
-.PHONY: container cov clean fmt
 $(bin): cmd/main.go $(srcs)
 	@mkdir -p $(shell dirname $(bin))
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build \
@@ -60,20 +59,24 @@ $(bin): cmd/main.go $(srcs)
 		-o $(bin) cmd/main.go
 
 .PHONY: build
-build: $(bin) ## Builds the Statemachine server binary
+build: $(bin) ## Builds the server binary and the React UI
+	@cd ui/app && npm run build
+	@rm -rf build/ui && mv ui/app/build build/ui
 
 .PHONY: test
 test: $(srcs) $(test_srcs)  ## Runs all tests
-	ginkgo -p $(pkgs)
+	@mkdir -p build/reports
+	ginkgo -p -cover -coverprofile=coverage.out -outputdir=build/reports $(pkgs)
 
 .PHONY: watch
 watch: $(srcs) $(test_srcs)  ## Runs all tests every time a source or test file changes
 	ginkgo watch -p $(pkgs)
 
-cov: $(srcs) $(test_srcs)  ## Runs the Test Coverage and saves the coverage report to out/reports/cov.out
-	@mkdir -p build/reports
-	@go test -coverprofile=out/reports/cov.out $(pkgs)
-	@echo "Coverage report at out/reports/cov.out"
+build/reports/coverage.out: test ## Runs all tests and generates the coverage report
+
+.PHONY: coverage
+coverage: build/reports/coverage.out ## Shows the coverage report in the browser
+	@go tool cover -html=build/reports/coverage.out
 
 .PHONY: all
 all: build test ## Builds the binary and runs all tests
@@ -98,11 +101,6 @@ run-container: container ## Runs the container locally
 .PHONY: ui-setup
 ui-setup: ## Installs the UI dependencies
 	@cd ui/app && npm install
-
-.PHONY: ui
-ui: ## Builds the UI
-	@cd ui/app && npm run build
-	@rm -rf build/ui && mv ui/app/build build/ui
 
 .PHONY: ui-dev
 ui-dev: ## Runs the UI in development mode
