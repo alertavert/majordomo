@@ -1,0 +1,4 @@
+# Test data for test_config.yaml
+api_key: test-key
+scenarios: test/scenarios.yaml
+code_snippets: code/snippets

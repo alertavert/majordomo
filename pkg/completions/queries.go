@@ -7,16 +7,19 @@ package completions
 import (
 	"context"
 	"fmt"
+	"github.com/alertavert/gpt4-go/pkg/config"
+	"github.com/alertavert/gpt4-go/pkg/preprocessors"
 	"github.com/rs/zerolog/log"
 	"github.com/sashabaranov/go-openai"
 	"mime/multipart"
+	"os"
 )
 
 const (
 	DefaultModel = openai.GPT4
-	GoDeveloper = "go_developer"
-	MaxLogLen = 120
-	WebDesigner = "web_developer"
+	GoDeveloper  = "go_developer"
+	MaxLogLen    = 120
+	WebDesigner  = "web_developer"
 )
 
 type PromptRequest struct {
@@ -37,12 +40,37 @@ var (
 
 	// oaiClient is an instance of the OpenAI client.
 	oaiClient *openai.Client
+	// store is the code snippets store.
+	store     preprocessors.CodeStoreHandler
 )
+
+// FIXME: this will have to eventually be replaced by a custom initialization for a
+// 		  CompletionHandler class
+func init() {
+	c, err := config.LoadConfig()
+	if err != nil {
+		log.Err(err).Msg("error loading config, this will cause runtime issues")
+		// We allow to proceed here, so that this can be used in tests.
+		return
+	}
+	curdir, _ := os.Getwd()
+	store = preprocessors.NewFilesystemStore(curdir, c.CodeSnippetsDir)
+	log.Info().
+		Str("dest", c.CodeSnippetsDir).
+		Str("src", curdir).
+		Msg("code snippets store initialized")
+}
 
 // SetClient configures the singleton instance of the OpenAI client.
 func SetClient(client *openai.Client) {
 	oaiClient = client
 }
+
+// SetStore initializes the code snippets store.
+func SetStore(s preprocessors.CodeStoreHandler) {
+	store = s
+}
+// END OF FIXME
 
 func BuildMessages(prompt *PromptRequest) ([]openai.ChatCompletionMessage, error) {
 	messages := make([]openai.ChatCompletionMessage, 0,
@@ -87,13 +115,39 @@ func BuildMessages(prompt *PromptRequest) ([]openai.ChatCompletionMessage, error
 	return messages, nil
 }
 
+func FillPrompt(prompt *PromptRequest) {
+	p := prompt.Prompt
+	var parser = preprocessors.Parser{
+		CodeMap: make(preprocessors.SourceCodeMap),
+	}
+	parser.ParsePrompt(p)
+	err := store.GetSourceCode(&parser.CodeMap)
+	if err != nil {
+		log.Err(err).Msg("error retrieving source code")
+		return
+	}
+	prompt.Prompt, err = parser.FillPrompt(p)
+	if err != nil {
+		log.Err(err).Msg("error filling prompt")
+		return
+	}
+	log.Debug().
+		Str("prompt", prompt.Prompt).
+		Msg("filled prompt")
+}
+
+// QueryBot queries the LLM with the given prompt.
 func QueryBot(prompt *PromptRequest) (string, error) {
+	if oaiClient == nil {
+		return "", fmt.Errorf("OpenAI client not initialized")
+	}
+	if store == nil {
+		return "", fmt.Errorf("code snippets store not initialized")
+	}
+	FillPrompt(prompt)
 	messages, err := BuildMessages(prompt)
 	if err != nil {
 		return "", err
-	}
-	if oaiClient == nil {
-		return "", fmt.Errorf("OpenAI client not initialized")
 	}
 	if prompt.Model == "" {
 		log.Debug().Msgf("using default model %s", DefaultModel)
@@ -126,6 +180,17 @@ func QueryBot(prompt *PromptRequest) (string, error) {
 		return "", fmt.Errorf("stopped for reason other than done: %s", stopReason)
 	}
 	botSays := resp.Choices[0].Message.Content
+	parser := preprocessors.Parser{
+		CodeMap: make(preprocessors.SourceCodeMap),
+	}
+	err = parser.ParseBotResponse(botSays)
+	if err != nil {
+		return "", fmt.Errorf("error parsing bot response: %v", err)
+	}
+	err = store.PutSourceCode(parser.CodeMap)
+	if err != nil {
+		log.Err(err).Msg("error storing source code")
+	}
 	botResponses = append(botResponses, botSays)
 	log.Debug().
 		Int("tokens", resp.Usage.TotalTokens).

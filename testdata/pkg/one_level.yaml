@@ -1,0 +1,6 @@
+# A test file for the pkg command.
+# This file is in the testdata directory, which is not a package.
+pkg: test
+demo:
+  one: 1
+  two: 2
