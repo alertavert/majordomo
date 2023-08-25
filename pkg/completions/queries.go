@@ -41,11 +41,12 @@ var (
 	// oaiClient is an instance of the OpenAI client.
 	oaiClient *openai.Client
 	// store is the code snippets store.
-	store     preprocessors.CodeStoreHandler
+	store preprocessors.CodeStoreHandler
 )
 
 // FIXME: this will have to eventually be replaced by a custom initialization for a
-// 		  CompletionHandler class
+//
+//	CompletionHandler class
 func init() {
 	c, err := config.LoadConfig()
 	if err != nil {
@@ -70,6 +71,7 @@ func SetClient(client *openai.Client) {
 func SetStore(s preprocessors.CodeStoreHandler) {
 	store = s
 }
+
 // END OF FIXME
 
 func BuildMessages(prompt *PromptRequest) ([]openai.ChatCompletionMessage, error) {
@@ -115,8 +117,9 @@ func BuildMessages(prompt *PromptRequest) ([]openai.ChatCompletionMessage, error
 	return messages, nil
 }
 
-func FillPrompt(prompt *PromptRequest) {
+func FillPrompt(prompt *PromptRequest) error {
 	p := prompt.Prompt
+	oldLen := len(p)
 	var parser = preprocessors.Parser{
 		CodeMap: make(preprocessors.SourceCodeMap),
 	}
@@ -124,16 +127,19 @@ func FillPrompt(prompt *PromptRequest) {
 	err := store.GetSourceCode(&parser.CodeMap)
 	if err != nil {
 		log.Err(err).Msg("error retrieving source code")
-		return
+		return err
 	}
 	prompt.Prompt, err = parser.FillPrompt(p)
 	if err != nil {
 		log.Err(err).Msg("error filling prompt")
-		return
+		return err
 	}
 	log.Debug().
-		Str("prompt", prompt.Prompt).
+		Int("prompt_len", len(prompt.Prompt)).
+		Int("old_len", oldLen).
+		Int("code_snippets", len(parser.CodeMap)).
 		Msg("filled prompt")
+	return nil
 }
 
 // QueryBot queries the LLM with the given prompt.
@@ -144,7 +150,10 @@ func QueryBot(prompt *PromptRequest) (string, error) {
 	if store == nil {
 		return "", fmt.Errorf("code snippets store not initialized")
 	}
-	FillPrompt(prompt)
+	err := FillPrompt(prompt)
+	if err != nil {
+		return "", err
+	}
 	messages, err := BuildMessages(prompt)
 	if err != nil {
 		return "", err

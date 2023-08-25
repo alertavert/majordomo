@@ -108,12 +108,16 @@ function App() {
                 body: JSON.stringify({prompt: content}),
             });
             setLoading(false);
+            const data = await response.json();
             if (response.ok) {
-                const data = await response.json();
                 console.log('Received:', data.message.length, 'characters');
                 setResponseValue(data.message);
             } else {
-                setError('Error (' + response.status + '): ' + response.statusText);
+                var errMsg = 'Error (' + response.status + '): ' + response.statusText;
+                if (data.message) {
+                    errMsg = errMsg + ' - ' + data.message;
+                }
+                setError('Error: ' + data.message);
             }
         } catch (error) {
             console.error('Error:', error);

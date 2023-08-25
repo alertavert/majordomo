@@ -29,7 +29,7 @@ func promptHandler(c *gin.Context) {
 	botResponse, err := completions.QueryBot(&requestBody)
 	if err != nil {
 		log.Error().Err(err).Msg("Error querying bot")
-		c.JSON(http.StatusInternalServerError, gin.H{
+		c.JSON(http.StatusBadRequest, gin.H{
 			"response": "error",
 			"message":  err.Error(),
 		})
