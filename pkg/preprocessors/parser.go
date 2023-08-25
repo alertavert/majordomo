@@ -17,9 +17,9 @@ const (
 	ErrorReadingCodeSnippet  = "error while reading %s: %v"
 
 	// TODO: there is some optimization that can be done here, but the gains are probably not worth it
-	FilepathPattern          = `^/?([\w.-]+/?)+$`
-	CodeSnippetPattern 		 = `'''([\w/.]+/?)\n([\s\S]+?)'''`
-	PromptCodePattern        = `'''([\w/.]+/?)\n'''`
+	FilepathPattern    = `^/?([\w.-]+/?)+$`
+	CodeSnippetPattern = `'''([\w/.]+/?)\n([\s\S]+?)'''`
+	PromptCodePattern  = `'''([\w/.]+/?)\n'''`
 )
 
 // SourceCodeMap is a map of file paths to their contents
@@ -93,7 +93,7 @@ func (p *Parser) FillPrompt(prompt string) (string, error) {
 	for _, match := range matches {
 		filePath := match[1]
 		content, found := p.CodeMap[filePath]
-		if !found {
+		if content == "" || !found {
 			return "", errors.New(fmt.Sprintf(ErrorNoCodeSnippetsFound, filePath,
 				"no entry in map"))
 		}
@@ -109,7 +109,7 @@ type FilesystemStore struct {
 	// SourceCodeDir is the directory where the code snippets are read from
 	SourceCodeDir string
 	// DestCodeDir is the directory where the code snippets are saved to
-	DestCodeDir   string
+	DestCodeDir string
 }
 
 func (fp *FilesystemStore) GetSourceCode(codeMap *SourceCodeMap) error {
@@ -125,8 +125,17 @@ func (fp *FilesystemStore) GetSourceCode(codeMap *SourceCodeMap) error {
 
 func (fp *FilesystemStore) PutSourceCode(codemap SourceCodeMap) error {
 	for relPath, content := range codemap {
+		absPath := filepath.Join(fp.DestCodeDir, relPath)
+		dir := filepath.Dir(absPath)
+		// Creates the directory if it doesn't exist
+		if _, err := os.Stat(dir); os.IsNotExist(err) {
+			err := os.MkdirAll(dir, 0755)
+			if err != nil {
+				return err
+			}
+		}
 		// Writes to the file in its respective directory
-		err := os.WriteFile(filepath.Join(fp.DestCodeDir, relPath), []byte(content), 0644)
+		err := os.WriteFile(absPath, []byte(content), 0644)
 		if err != nil {
 			return err
 		}

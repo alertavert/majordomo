@@ -23,10 +23,9 @@ func TestParser(t *testing.T) {
 	RunSpecs(t, "Pre-Processors Test Suite")
 }
 
-
-// SetupTestFiles creates two randomly named directories
-// and copies files from `testdata` folder and its sub-folders
-// into one of them.
+// SetupTestFiles creates two randomly named directories and copies files from `TestdataDir`
+// folder and its sub-folders into the first of them.
+// It returns the paths of the two directories, and an error if any.
 func SetupTestFiles() (srcDir string, destDir string, err error) {
 	srcDir, _ = os.MkdirTemp("", "src")
 	destDir, _ = os.MkdirTemp("", "dest")
@@ -35,8 +34,9 @@ func SetupTestFiles() (srcDir string, destDir string, err error) {
 		if err != nil {
 			return err
 		}
+		relPath, _ := filepath.Rel(TestdataDir, path)
+		destPath := filepath.Join(srcDir, relPath)
 		if !info.IsDir() {
-			destPath := srcDir + string(os.PathSeparator) + info.Name()
 			// Reading the file
 			data, err := os.ReadFile(path)
 			if err != nil {
@@ -47,12 +47,18 @@ func SetupTestFiles() (srcDir string, destDir string, err error) {
 			if err != nil {
 				return err
 			}
+		} else {
+			err := os.MkdirAll(destPath, info.Mode())
+			if err != nil {
+				return err
+			}
 		}
 		return nil
 	})
 	if err != nil {
 		return "", "", err
 	}
+	Expect(CompareDirs(TestdataDir, srcDir)).To(BeTrue())
 	return srcDir, destDir, nil
 }
 
@@ -109,18 +115,19 @@ func CompareDirs(dir1, dir2 string) (bool, error) {
 
 			// Checking the file existence in the second directory
 			if _, err := os.Stat(path2); os.IsNotExist(err) {
-				return err
+				return fmt.Errorf("file %s in dest dir (%s) does not exist: %v",
+					path2, dir2, err)
 			}
 
 			// Comparing the file contents
 			file1Contents, err := os.ReadFile(path1)
 			if err != nil {
-				return err
+				return fmt.Errorf("while reading %s: %s", path1, err)
 			}
 
 			file2Contents, err := os.ReadFile(path2)
 			if err != nil {
-				return err
+				return fmt.Errorf("while reading %s: %s", path2, err)
 			}
 
 			if string(file1Contents) != string(file2Contents) {

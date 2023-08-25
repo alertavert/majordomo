@@ -81,7 +81,6 @@ var _ = Describe("Prompt Parser", func() {
 		var parser preprocessors.Parser
 		BeforeEach(func() {
 			parser = preprocessors.Parser{CodeMap: make(preprocessors.SourceCodeMap)}
-			Expect(len(parser.CodeMap)).To(Equal(2))
 		})
 
 		It("should successfully fill in the correct content from the source code map", func() {
@@ -121,7 +120,6 @@ some_code: "that has no file path"
 			Expect(len(parser.CodeMap)).To(Equal(2))
 		})
 		PIt("should return an error when missing closing triple-quotes")
-		PIt("should return an error when opening triple-quotes are not followed by a file path")
 		PIt("should return an error when the file path is malformed")
 		It("should not return an error when the code snippet is inserted manually", func() {
 			prompt := `some text
@@ -153,8 +151,9 @@ This shouldn't work:
 var _ = Describe("FilesystemStore", func() {
 	Context("Getting files from the filesystem", func() {
 		var store preprocessors.CodeStoreHandler
-		var codeMap preprocessors.SourceCodeMap = make(preprocessors.SourceCodeMap)
+		var codeMap preprocessors.SourceCodeMap
 		BeforeEach(func() {
+			codeMap = make(preprocessors.SourceCodeMap)
 			// Copies the files from the testdata directory into a new temporary directory
 			// and uses that as the working directory as the source for the tests.
 			src, dest, err := SetupTestFiles()
@@ -170,7 +169,7 @@ var _ = Describe("FilesystemStore", func() {
 		})
 		It("Should fill in the map with the correct file content", func() {
 			Expect(store.GetSourceCode(&codeMap)).ToNot(HaveOccurred())
-			Expect(len(codeMap)).To(Equal(3))
+			Expect(len(codeMap)).To(Equal(6))
 			for name, content := range codeMap {
 				data, err := os.ReadFile(filepath.Join(TestdataDir, name))
 				Expect(err).ToNot(HaveOccurred())
@@ -181,7 +180,10 @@ var _ = Describe("FilesystemStore", func() {
 			codeMap["foo/bar.yaml"] = ""
 			Expect(store.GetSourceCode(&codeMap)).To(HaveOccurred())
 		})
-		PIt("Should correctly fill in files in subfolders", func() {
+		It("Should correctly fill in files in subfolders", func() {
+			data, _ := os.ReadFile(filepath.Join(TestdataDir, "misc/data/lvl/deep.txt"))
+			Expect(store.GetSourceCode(&codeMap)).ToNot(HaveOccurred())
+			Expect(codeMap["misc/data/lvl/deep.txt"]).To(Equal(string(data)))
 		})
 	})
 	Context("Putting files to the filesystem", func() {
@@ -211,8 +213,13 @@ var _ = Describe("FilesystemStore", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(isEqual).To(BeTrue())
 		})
-		PIt("Should correctly handle nested directories in the file path", func() {
-			Fail("Not implemented yet")
+		It("Should correctly handle nested directories in the file path", func() {
+			codeMap["misc/data/lvl/level-2/test.txt"] = "some deeply-nested content"
+			err := store.PutSourceCode(codeMap)
+			Expect(err).ToNot(HaveOccurred())
+			// this code checks that the file was created in the correct directory
+			_, err = os.Stat(filepath.Join(destDir, "misc/data/lvl/level-2/test.txt"))
+			Expect(err).ToNot(HaveOccurred())
 		})
 	})
 })

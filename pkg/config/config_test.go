@@ -18,8 +18,10 @@ var _ = Describe("Config", func() {
 	Describe("LoadConfig", func() {
 		Context("with non-existing config path", func() {
 			It("should fail", func() {
+				os.Setenv("MAJORDOMO_CONFIG", "/tmp/config.yaml")
 				_, err := config.LoadConfig()
 				Expect(err).To(HaveOccurred())
+				os.Unsetenv("MAJORDOMO_CONFIG")
 			})
 		})
 

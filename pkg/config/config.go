@@ -11,7 +11,7 @@ import (
 	"path"
 )
 
-var DefaultConfigLocation = os.Getenv("HOME") + "/.majordomo/test_config.yaml"
+var DefaultConfigLocation = os.Getenv("HOME") + "/.majordomo/config.yaml"
 
 type Config struct {
 	OpenAIApiKey      string `yaml:"api_key"`

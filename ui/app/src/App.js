@@ -15,7 +15,7 @@ import AudioRecorder from './Components/AudioRecorder';
 
 
 // FIXME: this should not be used, but the UI served directly from the host.
-const MajordomoServerUrl = 'http://localhost:5000';
+const MajordomoServerUrl = 'http://localhost:5005';
 const SpeechApiUrl = MajordomoServerUrl + '/command';
 const PromptApiUrl = MajordomoServerUrl + '/prompt';
 const ScenariosApiUrl = MajordomoServerUrl + '/scenarios';
