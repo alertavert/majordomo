@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 const TopSelector = ({ scenarios, onScenarioChange, onConversationChange }) => {
 
     // These will be filled dynamically as the conversation progress.
-    const [conversations, setConversations] = useState(["Start here..."]);
+    const [conversations, setConversations] = useState([]);
     const [selectedConversation, setSelectedConversation] = useState(1);
     const [isAdding, setIsAdding] = useState(false);
     const [newConversation, setNewConversation] = useState('');
