@@ -21,11 +21,6 @@ func promptHandler(c *gin.Context) {
 		})
 		return
 	}
-	if requestBody.Scenario == "" {
-		log.Debug().Msg("No scenario specified, using default")
-		requestBody.Scenario = completions.GoDeveloper
-	}
-
 	botResponse, err := completions.QueryBot(&requestBody)
 	if err != nil {
 		log.Error().Err(err).Msg("Error querying bot")

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-const TopSelector = ({ scenarios }) => {
+const TopSelector = ({ scenarios, onScenarioChange, onConversationChange }) => {
 
     // These will be filled dynamically as the conversation progress.
     const [conversations, setConversations] = useState(["Start here..."]);
@@ -16,8 +16,14 @@ const TopSelector = ({ scenarios }) => {
         }
     }, [isAdding]);
 
+    const handleScenarioChange = (event) => {
+        let selectedScenario = scenarios[event.target.value-1];
+        onScenarioChange(selectedScenario);
+    };
+
     const handleConversationChange = (event) => {
         setSelectedConversation(event.target.value);
+        onConversationChange(conversations[event.target.value-1]);
     }
 
     const handleNewConversationChange = (event) => {
@@ -49,7 +55,7 @@ const TopSelector = ({ scenarios }) => {
         <div className="row">
             <div className="col-md-2">
                 <span className="bold-label">Scenario:&nbsp;</span>
-                <select className='form-control'>
+                <select className='form-control' onChange={handleScenarioChange}>
                     {scenarios.map((option, index) => (
                         <option value={index+1}>{option}</option>
                     ))}

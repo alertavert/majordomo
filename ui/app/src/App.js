@@ -20,7 +20,7 @@ const SpeechApiUrl = MajordomoServerUrl + '/command';
 const PromptApiUrl = MajordomoServerUrl + '/prompt';
 const ScenariosApiUrl = MajordomoServerUrl + '/scenarios';
 
-const Mp3Recorder = new MicRecorder({ bitRate: 128 });
+const Mp3Recorder = new MicRecorder({bitRate: 128});
 
 function App() {
     const [responseValue, setResponseValue] = useState('Bot says...');
@@ -35,9 +35,33 @@ function App() {
     const refTextAreaValue = useRef(textareaValue);
     refTextAreaValue.current = textareaValue;
 
+
+
     // Scenarios to choose from
-    // TODO: fill in by hitting the /scenarios API.
-    let Scenarios = ["GoLang Dev", "Web Dev"];
+    const [Scenarios, setScenarios] = useState(['']);  // New state to store fetched Scenarios
+
+    // TopSelector state declarations
+    const [selectedScenario, setSelectedScenario] = useState(Scenarios[0]);  // Assume the first scenario is selected by default
+    const [selectedConversation, setSelectedConversation] = useState('Start here...');  // Default conversation
+
+    // Fetching scenarios on initial mount
+    useEffect(() => {
+        fetch(ScenariosApiUrl)
+            .then((response) => response.json())
+            .then((data) => {
+                setScenarios(data.scenarios);
+                setSelectedScenario(data[0])  // Default scenario set based on fetched data
+            })
+    }, []);
+
+    const handleScenarioChange = (scenario) => {
+        setSelectedScenario(scenario);
+    };
+
+    const handleConversationChange = (conversation) => {
+        setSelectedConversation(conversation);
+    };
+
 
     const startRecording = async () => {
         setError(null);
@@ -56,7 +80,7 @@ function App() {
         Mp3Recorder
             .stop()
             .getMp3()
-            .then(async([buffer, blob]) => {
+            .then(async ([buffer, blob]) => {
                 const blobURL = URL.createObjectURL(blob)
                 setBlobURL(blobURL);
                 // Send the blob to the server here or in separate function
@@ -83,12 +107,12 @@ function App() {
     };
 
     useEffect(() => {
-        navigator.mediaDevices.getUserMedia({ audio: true })
-            .then(function(stream) {
+        navigator.mediaDevices.getUserMedia({audio: true})
+            .then(function (stream) {
                 console.log('Permission Granted');
                 setIsBlocked(false);
             })
-            .catch(function(err) {
+            .catch(function (err) {
                 console.log('Permission Denied');
                 setIsBlocked(true);
             });
@@ -105,7 +129,11 @@ function App() {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({prompt: content}),
+                body: JSON.stringify({
+                    prompt: content,
+                    scenario: selectedScenario,
+                    session: selectedConversation,
+                }),
             });
             setLoading(false);
             const data = await response.json();
@@ -128,7 +156,11 @@ function App() {
         <div className="container">
             <Logo/>
             <Header/>
-            <TopSelector scenarios={Scenarios}/>
+            <TopSelector
+                scenarios={Scenarios}
+                onScenarioChange={handleScenarioChange}
+                onConversationChange={handleConversationChange}
+            />
             <AudioRecorder
                 startRecording={startRecording}
                 stopRecording={stopRecording}
@@ -139,9 +171,9 @@ function App() {
                 textareaValue={refTextAreaValue.current}
                 setTextareaValue={setTextareaValue}/>
             <span className="d-block p-2"/>
-            <span> {loading ? <Spinner /> : <ResponseBox responseValue={responseValue}/>}</span>
+            <span> {loading ? <Spinner/> : <ResponseBox responseValue={responseValue}/>}</span>
             <div className='error-box'>
-                { error !== '' ? <ErrorBox message={error}/> : null }
+                {error !== '' ? <ErrorBox message={error}/> : null}
             </div>
             <Footer/>
         </div>
@@ -150,8 +182,8 @@ function App() {
 
 function Header() {
     return (
-        <div className="page-header">
-            <h1>Majordomo <span><code>Your helpful code bot</code></span></h1>
+        <div className="App-header">
+            <h1 className="title">Majordomo&nbsp;<span className="font-monospace">Your helpful code bot</span></h1>
         </div>
     );
 }
@@ -193,7 +225,7 @@ function ResponseBox({responseValue}) {
         <div className="container-fluid">
             <div className="jumbotron">
                 <h6>Response</h6>
-                <ResizableTextArea value={responseValue} />
+                <ResizableTextArea value={responseValue}/>
             </div>
         </div>
     );
