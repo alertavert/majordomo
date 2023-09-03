@@ -150,6 +150,10 @@ func QueryBot(prompt *PromptRequest) (string, error) {
 	if store == nil {
 		return "", fmt.Errorf("code snippets store not initialized")
 	}
+	if prompt.Model == "" {
+		log.Debug().Msgf("using default model %s", DefaultModel)
+		prompt.Model = DefaultModel
+	}
 	err := FillPrompt(prompt)
 	if err != nil {
 		return "", err
@@ -158,12 +162,10 @@ func QueryBot(prompt *PromptRequest) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if prompt.Model == "" {
-		log.Debug().Msgf("using default model %s", DefaultModel)
-		prompt.Model = DefaultModel
-	}
 	log.Debug().
 		Int("items", len(messages)).
+		Str("scenario", prompt.Scenario).
+		Str("session", prompt.Session).
 		Str("model", prompt.Model).
 		Msg("querying LLM")
 
