@@ -35,14 +35,12 @@ function App() {
     const refTextAreaValue = useRef(textareaValue);
     refTextAreaValue.current = textareaValue;
 
-
-
     // Scenarios to choose from
-    const [Scenarios, setScenarios] = useState(['']);  // New state to store fetched Scenarios
+    const [Scenarios, setScenarios] = useState([]);  // New state to store fetched Scenarios
 
     // TopSelector state declarations
-    const [selectedScenario, setSelectedScenario] = useState(Scenarios[0]);  // Assume the first scenario is selected by default
-    const [selectedConversation, setSelectedConversation] = useState('Start here...');  // Default conversation
+    const [selectedScenario, setSelectedScenario] = useState('');
+    const [selectedConversation, setSelectedConversation] = useState('Ask Majordomo');
 
     // Fetching scenarios on initial mount
     useEffect(() => {
@@ -50,7 +48,7 @@ function App() {
             .then((response) => response.json())
             .then((data) => {
                 setScenarios(data.scenarios);
-                setSelectedScenario(data[0])  // Default scenario set based on fetched data
+                setSelectedScenario(Scenarios[0])  // Default scenario set based on fetched data
             })
     }, []);
 
@@ -61,7 +59,6 @@ function App() {
     const handleConversationChange = (conversation) => {
         setSelectedConversation(conversation);
     };
-
 
     const startRecording = async () => {
         setError(null);
