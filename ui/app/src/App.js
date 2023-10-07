@@ -45,11 +45,17 @@ function App() {
     // Fetching scenarios on initial mount
     useEffect(() => {
         fetch(ScenariosApiUrl)
-            .then((response) => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then((data) => {
                 setScenarios(data.scenarios);
                 setSelectedScenario(Scenarios[0])  // Default scenario set based on fetched data
             })
+            .catch(error => setError(`Could not retrieve Scenarios: ${error.message}`));
     }, []);
 
     const handleScenarioChange = (scenario) => {
@@ -67,7 +73,7 @@ function App() {
         } else {
             Mp3Recorder.start().then(() => {
                 setIsRecording(true);
-            }).catch((e) => setError(e));
+            }).catch((e) => setError(e.message));
         }
     };
 
@@ -138,14 +144,14 @@ function App() {
                 console.log('Received:', data.message.length, 'characters');
                 setResponseValue(data.message);
             } else {
-                var errMsg = 'Error (' + response.status + '): ' + response.statusText;
+                let errMsg = 'Error (' + response.status + '): ' + response.statusText;
                 if (data.message) {
                     errMsg = errMsg + ' - ' + data.message;
                 }
-                setError('Error: ' + data.message);
+                setError('Error: ' + errMsg);
             }
         } catch (error) {
-            console.error('Error:', error);
+            setError("The Bot wasn't quite there yet: " + error.message);
         }
     };
 
