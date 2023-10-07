@@ -29,7 +29,7 @@ function App() {
 
     const [isRecording, setIsRecording] = useState(false);
     const [isBlocked, setIsBlocked] = useState(false);
-    const [blobURL, setBlobURL] = useState('');
+    const [blobURL, setBlobURL] = useState('')
 
     const [textareaValue, setTextareaValue] = useState('');
     const refTextAreaValue = useRef(textareaValue);
@@ -39,21 +39,25 @@ function App() {
     const [Scenarios, setScenarios] = useState([]);  // New state to store fetched Scenarios
 
     // TopSelector state declarations
-    const [selectedScenario, setSelectedScenario] = useState('');
+    const [selectedScenario, setSelectedScenario] = useState(null);
     const [selectedConversation, setSelectedConversation] = useState('Ask Majordomo');
 
     // Fetching scenarios on initial mount
     useEffect(() => {
+        // TODO: move to a separate function
         fetch(ScenariosApiUrl)
             .then(response => {
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    throw new Error(`Failed to retrieve scenarios: ${response.statusText}`);
                 }
                 return response.json();
             })
             .then((data) => {
+                if (data.scenarios.length === 0) {
+                    throw new Error('No scenarios found');
+                }
                 setScenarios(data.scenarios);
-                setSelectedScenario(Scenarios[0])  // Default scenario set based on fetched data
+                setSelectedScenario(data.scenarios[0]);
             })
             .catch(error => setError(`Could not retrieve Scenarios: ${error.message}`));
     }, []);
@@ -100,13 +104,12 @@ function App() {
                         setTextareaValue(data.message);
                     } else {
                         const errorData = await response.json(); // Parse the error response as JSON
-                        setError('Error (' + response.status + '): ' + errorData.message); // Show the content of the error message
-                        // setError('Error (' + response.status + '): ' + response.message);
+                        setError('Error (' + response.status + '): ' + errorData.message);
                     }
                 } catch (error) {
-                    setError('Cannot POST Audio: ' + error);
+                    setError('Cannot convert Audio: ' + error);
                 }
-            }).catch((e) => setError(e));
+            }).catch((e) => setError('Failed trying to convert audio: ' + e));
     };
 
     useEffect(() => {
@@ -143,6 +146,7 @@ function App() {
             if (response.ok) {
                 console.log('Received:', data.message.length, 'characters');
                 setResponseValue(data.message);
+                setTextareaValue('');
             } else {
                 let errMsg = 'Error (' + response.status + '): ' + response.statusText;
                 if (data.message) {
@@ -211,18 +215,17 @@ function PromptBox({onSubmit, textareaValue, setTextareaValue}) {
                           value={textareaValue}
                           onChange={handleTextareaChange}
                 />
+                <div className="d-flex justify-content-end">
                 <button className="btn btn-primary btn-sm ask-btn"
                         onClick={handleSubmit}>Ask Majordomo
                 </button>
+                </div>
             </div>
         </div>
     );
 }
 
 function ResponseBox({responseValue}) {
-    const [rows, setRows] = useState(5); // just an example row size
-    const maxRows = 25; // assuming maximum rows limit is 10
-
     console.log('ResponseBox responseValue:', responseValue);
     return (
         <div className="container-fluid">

@@ -1,9 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faPen, faTrash } from '@fortawesome/free-solid-svg-icons'
+
 const TopSelector = ({ scenarios, onScenarioChange, onConversationChange }) => {
 
     // These will be filled dynamically as the conversation progress.
-    const [conversations, setConversations] = useState([]);
+    const [conversations, setConversations] = useState(['Ask Majordomo']);
     const [selectedConversation, setSelectedConversation] = useState(1);
     const [isAdding, setIsAdding] = useState(false);
     const [newConversation, setNewConversation] = useState('');
@@ -64,16 +67,24 @@ const TopSelector = ({ scenarios, onScenarioChange, onConversationChange }) => {
             <div className="col-md-2">
                 <span className="bold-label">Conversation:&nbsp;</span>
                 {isAdding
-                    ? <input ref={inputRef} className="form-control" type="text" onChange={handleNewConversationChange} onKeyDown={handleKeyDown} value={newConversation} />
-                    : <select className='form-control' value={selectedConversation} onChange={handleConversationChange}>
+                    ? <input ref={inputRef} className="form-control"
+                             type="text"
+                             onChange={handleNewConversationChange}
+                             onKeyDown={handleKeyDown}
+                             value={newConversation} />
+                    : <select className='form-control'
+                              value={selectedConversation}
+                              onChange={handleConversationChange}>
                         {conversations.map((option, index) => (
                             <option value={index+1}>{option}</option>
                         ))}
                     </select>}
             </div>
             <div className="col-md-2 align-self-center">
-                <button className="btn btn-outline-dark btn-sm ask-btn" onClick={addConversation}>➕</button>
-                {conversations.length > 1 && <button className="btn btn-outline-dark btn-sm ask-btn" onClick={deleteConversation}>➖</button>}
+                <button
+                    className="btn btn-outline-dark btn-sm conversation-btn"
+                    onClick={addConversation}><FontAwesomeIcon icon={faPen} /></button>
+                {conversations.length > 1 && <button className="btn btn-outline-dark btn-sm conversation-btn" onClick={deleteConversation}><FontAwesomeIcon icon={faTrash} /></button>}
             </div>
         </div>
     )

@@ -1,5 +1,5 @@
 .App {
-  text-align: center;
+  text-align: left;
   background: #626161;
 }
 
@@ -34,16 +34,18 @@
 }
 
 .ask-btn {
-  margin-top: 20px;
+  text-align: center;
+  margin-top: 10px;
+  margin-bottom: 20px;
+  width: 200px;
   font-size: 16px;
   color: #e7ff8d;
 }
 
-.record-btn {
-  margin-top: 20px;
+.conversation-btn {
+  text-align: center;
+  margin-top: 25px;
   font-size: 16px;
-  background: #28661b;
-  color: #e7ff8d;
 }
 
 .stop-btn {
