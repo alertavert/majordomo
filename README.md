@@ -21,6 +21,10 @@ The server itself can be run in `dev` mode via `make run` and is reachable at `h
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+This is what it currently looks like (Nov 2023):
+
+![Majordomo](./docs/images/majordomo.png)
+
 You will need `npm` to run all this, on MacOS it's just a matter of `brew install npm` and on Linux `sudo apt install npm` should work - although, with this junk, it's always a coin toss.
 
 ## Available Scripts
@@ -59,5 +63,3 @@ See the section about [deployment](https://facebook.github.io/create-react-app/d
 
 Launches the test runner in the interactive watch mode.
 See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
-
-

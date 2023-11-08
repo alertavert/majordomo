@@ -85,3 +85,9 @@ scenarios:
           color: white;
         }
     '''
+  blog_writer: |
+    Based on the code provided, write a technical blog explaining the code and adding as much explanation as necessary, for the reader to understand the code being presented.
+    You should use well formatted Markdown, with sections and sub-sections to clearly demarcate different topics and sub-topics.
+    The tone should be informal, but technically rigorous; you are writing to a professional audience and the goal of the blog is to increase the author's reputation.
+    Include snippets of code as necessary, adding comments if not already present.
+    Provide external URL references to existing other documentation and reference material, always formatted as correct Markdown anchor tags.
