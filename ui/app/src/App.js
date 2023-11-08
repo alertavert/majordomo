@@ -146,7 +146,6 @@ function App() {
             if (response.ok) {
                 console.log('Received:', data.message.length, 'characters');
                 setResponseValue(data.message);
-                setTextareaValue('');
             } else {
                 let errMsg = 'Error (' + response.status + '): ' + response.statusText;
                 if (data.message) {
@@ -210,7 +209,7 @@ function PromptBox({onSubmit, textareaValue, setTextareaValue}) {
         <div className="container-fluid">
             <div className="jumbotron">
                 <h6>Your request:</h6>
-                <textarea className="form-control"
+                <textarea className="form-control prompt-box"
                           style={{height: '200px'}}
                           value={textareaValue}
                           onChange={handleTextareaChange}

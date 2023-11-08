@@ -1,6 +1,6 @@
 
-.resizable-textarea {
-    background-color: #bfbfbf;
-    color: #0f3063;
-    cursor: crosshair;
+.resizable-textarea, .resizable-textarea:focus {
+    background-color: #2e2e96;
+    color: antiquewhite;
+    cursor: grab;
 }
