@@ -44,11 +44,9 @@ var (
 	store preprocessors.CodeStoreHandler
 )
 
-// FIXME: this will have to eventually be replaced by a custom initialization for a
-//
-//	CompletionHandler class
+// FIXME: this will have to eventually be replaced by a custom initialization for a CompletionHandler class
 func init() {
-	c, err := config.LoadConfig()
+	c, err := config.LoadConfig("")
 	if err != nil {
 		log.Err(err).Msg("error loading config, this will cause runtime issues")
 		// We allow to proceed here, so that this can be used in tests.
