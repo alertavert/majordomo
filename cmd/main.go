@@ -21,12 +21,10 @@ var Release = "UNKNOWN"
 func main() {
 	var port int
 	var debug bool
-	var model string
 	var configPath string
 
 	flag.IntVar(&port, "port", 8080, "Define the port the server will listen on for incoming requests")
 	flag.BoolVar(&debug, "debug", false, "Set Debug log levels")
-	flag.StringVar(&model, "model", "gpt-4", "Choose the LLM model to use")
 	flag.StringVar(&configPath, "config", "", "Path to the configuration file; "+
 		"if not specified, and the env var "+config.
 		LocationEnv+" is not defined, it will use the default location: "+config.DefaultConfigLocation)

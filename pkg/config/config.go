@@ -32,6 +32,7 @@ type Config struct {
 	ScenariosLocation string    `yaml:"scenarios"`
 	CodeSnippetsDir   string    `yaml:"code_snippets"`
 	Projects          []Project `yaml:"projects"`
+	Model             string    `yaml:"model"`
 }
 
 // Save writes the Config to a YAML file at the given filePath.

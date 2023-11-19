@@ -42,6 +42,8 @@ var (
 	oaiClient *openai.Client
 	// store is the code snippets store.
 	store preprocessors.CodeStoreHandler
+
+	model string
 )
 
 // FIXME: this will have to eventually be replaced by a custom initialization for a CompletionHandler class
@@ -54,9 +56,11 @@ func init() {
 	}
 	curdir, _ := os.Getwd()
 	store = preprocessors.NewFilesystemStore(curdir, c.CodeSnippetsDir)
+	model = c.Model
 	log.Info().
 		Str("dest", c.CodeSnippetsDir).
 		Str("src", curdir).
+		Str("model", model).
 		Msg("code snippets store initialized")
 }
 
@@ -148,10 +152,13 @@ func QueryBot(prompt *PromptRequest) (string, error) {
 	if store == nil {
 		return "", fmt.Errorf("code snippets store not initialized")
 	}
-	if prompt.Model == "" {
-		log.Debug().Msgf("using default model %s", DefaultModel)
+	//if prompt.Model == "" {
+	if model == "" {
 		prompt.Model = DefaultModel
+	} else {
+		prompt.Model = model
 	}
+	//}
 	err := FillPrompt(prompt)
 	if err != nil {
 		return "", err
