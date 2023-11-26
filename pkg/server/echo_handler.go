@@ -8,24 +8,32 @@ import (
 	"github.com/alertavert/gpt4-go/pkg/completions"
 	"github.com/gin-gonic/gin"
 	"net/http"
-	"time"
 )
 
 // echoHandler is a simple handler that echoes back the prompt it receives
-// after a 1-second delay.
-func echoHandler(c *gin.Context) {
-	var requestBody completions.PromptRequest
-	err := c.ShouldBindJSON(&requestBody)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"response": "error",
-			"message":  err.Error(),
+// after parsing it and substituting any code snippets.
+func echoHandler(m *completions.Majordomo) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		var requestBody completions.PromptRequest
+		err := c.ShouldBindJSON(&requestBody)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"response": "error",
+				"message":  err.Error(),
+			})
+			return
+		}
+		err = m.FillPrompt(&requestBody)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"response": "error",
+				"message":  err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"response": "success",
+			"message":  requestBody.Prompt,
 		})
-		return
 	}
-	time.Sleep(1 * time.Second)
-	c.JSON(http.StatusOK, gin.H{
-		"response": "success",
-		"message":  requestBody.Prompt,
-	})
 }

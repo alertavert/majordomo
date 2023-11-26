@@ -169,7 +169,7 @@ var _ = Describe("FilesystemStore", func() {
 		})
 		It("Should fill in the map with the correct file content", func() {
 			Expect(store.GetSourceCode(&codeMap)).ToNot(HaveOccurred())
-			Expect(len(codeMap)).To(Equal(6))
+			Expect(len(codeMap)).To(Equal(7))
 			for name, content := range codeMap {
 				data, err := os.ReadFile(filepath.Join(TestdataDir, name))
 				Expect(err).ToNot(HaveOccurred())
@@ -192,7 +192,7 @@ var _ = Describe("FilesystemStore", func() {
 		var store preprocessors.CodeStoreHandler
 		var codeMap = make(preprocessors.SourceCodeMap)
 
-		//var store preprocessors.CodeStoreHandler
+		//var store preprocessors.CodeStore
 		BeforeEach(func() {
 			// Creates a new temporary directory as the destination directory
 			_, destDir, err = SetupTestFiles()

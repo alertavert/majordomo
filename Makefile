@@ -83,7 +83,7 @@ all: build test ## Builds the binary and runs all tests
 
 .PHONY: run
 run: $(bin) ## Runs the server binary
-	$(bin) -debug -port 5005 -model gpt-4
+	$(bin) -debug -port 5005
 
 ##@ Container Management
 # Convenience targets to run locally containers and
