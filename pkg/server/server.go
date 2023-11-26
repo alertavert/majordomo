@@ -5,40 +5,49 @@
 package server
 
 import (
-	"github.com/alertavert/gpt4-go/pkg/preprocessors"
+	"github.com/alertavert/gpt4-go/pkg/completions"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"net/http"
-	"os"
 )
 
-const DefaultFileLocation = "staging"
-
 type Server struct {
-	router *gin.Engine
-	filestore preprocessors.CodeStoreHandler
+	addr      string
+	router    *gin.Engine
+	assistant *completions.Majordomo
 }
 
 var server *Server
 
-func Setup(debug bool) *Server {
-	// TODO: convert the server configuration to a struct
-	srcDir, _ := os.Getwd()
+func NewServer(addr string, assistant *completions.Majordomo) *Server {
 	server = &Server{
-		router: gin.Default(),
-		// TODO: make the file locations configurable
-		filestore: preprocessors.NewFilesystemStore(srcDir, DefaultFileLocation),
-	}
-	if debug {
-		gin.SetMode(gin.DebugMode)
-	} else {
-		gin.SetMode(gin.ReleaseMode)
+		router:    gin.Default(),
+		assistant: assistant,
+		addr:      addr,
 	}
 	server.router.Use(cors.Default())
-	setupHandlers(server.router)
+	server.setupHandlers()
 	return server
 }
 
-func (server *Server) Run(addr string) error {
-	return http.ListenAndServe(addr, server.router)
+func (s *Server) SetDebugMode() {
+	gin.SetMode(gin.DebugMode)
+}
+
+func (s *Server) Run() error {
+	return http.ListenAndServe(s.addr, s.router)
+}
+
+func (s *Server) setupHandlers() {
+	r := s.router
+	r.POST("/command", audioHandler(s.assistant))
+	r.POST("/echo", echoHandler(s.assistant))
+	r.POST("/prompt", promptHandler(s.assistant))
+	r.GET("/scenarios", scenariosHandler)
+
+	// Static routes
+	r.Static("/web", "build/ui")
+	r.Static("/static/css", "build/ui/static/css")
+	r.Static("/static/js", "build/ui/static/js")
+	r.Static("/static/media", "build/ui/static/media")
 }

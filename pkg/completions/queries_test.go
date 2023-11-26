@@ -23,7 +23,6 @@ var _ = Describe("Building Prompts", func() {
 	var (
 		req completions.PromptRequest
 	)
-
 	BeforeEach(func() {
 		Expect(completions.ReadScenarios(TestScenariosLocation)).ShouldNot(HaveOccurred())
 		req = completions.PromptRequest{
@@ -32,15 +31,6 @@ var _ = Describe("Building Prompts", func() {
 			Session:  "session",
 		}
 	})
-
-	Context("QueryBot", func() {
-		It("Should return 'OpenAI client not initialized' error", func() {
-			_, err := completions.QueryBot(&req)
-			Expect(err.Error()).To(Equal(NoClientError))
-		})
-		// TODO: add more tests.
-	})
-
 	Context("BuildMessages function", func() {
 		It("Should throw 'no scenario found' error", func() {
 			req.Scenario = "unknown"

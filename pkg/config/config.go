@@ -33,6 +33,7 @@ type Config struct {
 	CodeSnippetsDir   string    `yaml:"code_snippets"`
 	Projects          []Project `yaml:"projects"`
 	Model             string    `yaml:"model"`
+	ActiveProject     string    `yaml:"active_project"`
 }
 
 // Save writes the Config to a YAML file at the given filePath.
@@ -59,7 +60,7 @@ func (c *Config) Save(filepath string) error {
 // If filepath is empty, it will read from the default location, unless the
 // MAJORDOMO_CONFIG environment variable is set, in which case it will read
 // from that location.
-func LoadConfig(filepath string) (Config, error) {
+func LoadConfig(filepath string) (*Config, error) {
 	var c Config
 
 	if filepath == "" {
@@ -71,12 +72,12 @@ func LoadConfig(filepath string) (Config, error) {
 
 	data, err := os.ReadFile(filepath)
 	if err != nil {
-		return c, fmt.Errorf("error reading config file: %w", err)
+		return nil, fmt.Errorf("error reading config file: %w", err)
 	}
 
 	err = yaml.Unmarshal(data, &c)
 	if err != nil {
-		return c, fmt.Errorf("error unmarshaling yaml: %w", err)
+		return nil, fmt.Errorf("error unmarshaling yaml: %w", err)
 	}
 
 	c.LoadedFrom = filepath
@@ -89,5 +90,8 @@ func LoadConfig(filepath string) (Config, error) {
 	if !path.IsAbs(c.CodeSnippetsDir) {
 		c.CodeSnippetsDir = path.Join(baseDir, c.CodeSnippetsDir)
 	}
-	return c, nil
+	if c.ActiveProject == "" && len(c.Projects) > 0 {
+		c.ActiveProject = c.Projects[0].Name
+	}
+	return &c, nil
 }

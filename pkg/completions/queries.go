@@ -12,14 +12,11 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/sashabaranov/go-openai"
 	"mime/multipart"
-	"os"
+	"strings"
 )
 
 const (
-	DefaultModel = openai.GPT4
-	GoDeveloper  = "go_developer"
-	MaxLogLen    = 120
-	WebDesigner  = "web_developer"
+	DefaultModel = openai.GPT4TurboPreview
 )
 
 type PromptRequest struct {
@@ -29,52 +26,60 @@ type PromptRequest struct {
 	Scenario string `json:"scenario"`
 	// The session ID (if any) to keep track of past prompts/responses in the conversation.
 	Session string `json:"session,omitempty"`
-	// The LLM model to use (selected by the user).
-	Model string `json:"model,omitempty"`
 }
 
-// FIXME: Keeping the messages in memory is not a good idea.
+type Majordomo struct {
+	// The OpenAI Client
+	Client *openai.Client
+	// The Code Snippets CodeStore
+	CodeStore preprocessors.CodeStoreHandler
+	// The Model to use
+	Model string
+}
+
+// NewMajordomo creates a new Majordomo instance from a Config struct.
+func NewMajordomo(cfg *config.Config) (*Majordomo, error) {
+	var assistant = new(Majordomo)
+	assistant.Client = openai.NewClient(cfg.OpenAIApiKey)
+	if assistant.Client == nil {
+		return nil, fmt.Errorf("error initializing OpenAI client")
+	}
+
+	// Based on the active project, we set the code snippets directory.
+	for _, p := range cfg.Projects {
+		if p.Name == cfg.ActiveProject {
+			destDir := strings.Join([]string{cfg.CodeSnippetsDir, p.Name}, "/")
+			assistant.CodeStore = preprocessors.NewFilesystemStore(p.Location, destDir)
+			log.Debug().
+				Str("dest", destDir).
+				Str("src", p.Location).
+				Msg("code snippets filesystem store initialized")
+			break
+		}
+		return nil, fmt.Errorf("no project found for %s", cfg.ActiveProject)
+	}
+	if cfg.Model == "" {
+		assistant.Model = DefaultModel
+	} else {
+		assistant.Model = cfg.Model
+	}
+	log.Debug().
+		Str("model", assistant.Model).
+		Str("active_project", cfg.ActiveProject).
+		Str("snippets", cfg.CodeSnippetsDir).
+		Msg("assistant initialized")
+	return assistant, nil
+}
+
+// FIXME: All the conversations should be indexed by the session ID, made up of the Project/Scenario
 var (
 	userPrompts  []string
 	botResponses []string
-
-	// oaiClient is an instance of the OpenAI client.
-	oaiClient *openai.Client
-	// store is the code snippets store.
-	store preprocessors.CodeStoreHandler
-
-	model string
 )
 
-// FIXME: this will have to eventually be replaced by a custom initialization for a CompletionHandler class
-func init() {
-	c, err := config.LoadConfig("")
-	if err != nil {
-		log.Err(err).Msg("error loading config, this will cause runtime issues")
-		// We allow to proceed here, so that this can be used in tests.
-		return
-	}
-	curdir, _ := os.Getwd()
-	store = preprocessors.NewFilesystemStore(curdir, c.CodeSnippetsDir)
-	model = c.Model
-	log.Info().
-		Str("dest", c.CodeSnippetsDir).
-		Str("src", curdir).
-		Str("model", model).
-		Msg("code snippets store initialized")
-}
-
-// SetClient configures the singleton instance of the OpenAI client.
-func SetClient(client *openai.Client) {
-	oaiClient = client
-}
-
-// SetStore initializes the code snippets store.
-func SetStore(s preprocessors.CodeStoreHandler) {
-	store = s
-}
-
-// END OF FIXME
+// TODO: create a type to manage each conversation, and store them in a map.
+// TODO: the key for the map should be the session ID, which is a combination of the project and scenario.
+// TODO: the value should be a struct that holds the sequence of prompts and bot responses.
 
 func BuildMessages(prompt *PromptRequest) ([]openai.ChatCompletionMessage, error) {
 	messages := make([]openai.ChatCompletionMessage, 0,
@@ -119,14 +124,15 @@ func BuildMessages(prompt *PromptRequest) ([]openai.ChatCompletionMessage, error
 	return messages, nil
 }
 
-func FillPrompt(prompt *PromptRequest) error {
+// FillPrompt fills the prompt with the code snippets.
+func (m *Majordomo) FillPrompt(prompt *PromptRequest) error {
 	p := prompt.Prompt
 	oldLen := len(p)
 	var parser = preprocessors.Parser{
 		CodeMap: make(preprocessors.SourceCodeMap),
 	}
 	parser.ParsePrompt(p)
-	err := store.GetSourceCode(&parser.CodeMap)
+	err := m.CodeStore.GetSourceCode(&parser.CodeMap)
 	if err != nil {
 		log.Err(err).Msg("error retrieving source code")
 		return err
@@ -145,21 +151,15 @@ func FillPrompt(prompt *PromptRequest) error {
 }
 
 // QueryBot queries the LLM with the given prompt.
-func QueryBot(prompt *PromptRequest) (string, error) {
-	if oaiClient == nil {
+func (m *Majordomo) QueryBot(prompt *PromptRequest) (string, error) {
+	if m.Client == nil {
 		return "", fmt.Errorf("OpenAI client not initialized")
 	}
-	if store == nil {
+	if m.CodeStore == nil {
 		return "", fmt.Errorf("code snippets store not initialized")
 	}
-	//if prompt.Model == "" {
-	if model == "" {
-		prompt.Model = DefaultModel
-	} else {
-		prompt.Model = model
-	}
-	//}
-	err := FillPrompt(prompt)
+
+	err := m.FillPrompt(prompt)
 	if err != nil {
 		return "", err
 	}
@@ -171,13 +171,13 @@ func QueryBot(prompt *PromptRequest) (string, error) {
 		Int("items", len(messages)).
 		Str("scenario", prompt.Scenario).
 		Str("session", prompt.Session).
-		Str("model", prompt.Model).
+		Str("model", m.Model).
 		Msg("querying LLM")
 
-	resp, err := oaiClient.CreateChatCompletion(
+	resp, err := m.Client.CreateChatCompletion(
 		context.Background(),
 		openai.ChatCompletionRequest{
-			Model:    prompt.Model,
+			Model:    m.Model,
 			Messages: messages,
 		})
 	if err != nil {
@@ -203,7 +203,7 @@ func QueryBot(prompt *PromptRequest) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error parsing bot response: %v", err)
 	}
-	err = store.PutSourceCode(parser.CodeMap)
+	err = m.CodeStore.PutSourceCode(parser.CodeMap)
 	if err != nil {
 		log.Err(err).Msg("error storing source code")
 	}
@@ -215,8 +215,8 @@ func QueryBot(prompt *PromptRequest) (string, error) {
 	return botSays, nil
 }
 
-func SpeechToText(audioFile multipart.File) (string, error) {
-	resp, err := oaiClient.CreateTranscription(
+func (m *Majordomo) SpeechToText(audioFile multipart.File) (string, error) {
+	resp, err := m.Client.CreateTranscription(
 		context.Background(),
 		openai.AudioRequest{
 			Model:    openai.Whisper1,

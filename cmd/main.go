@@ -12,7 +12,6 @@ import (
 	"github.com/alertavert/gpt4-go/pkg/server"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/sashabaranov/go-openai"
 )
 
 // Release version of the server. It is expected to be set during build.
@@ -51,16 +50,19 @@ func main() {
 		log.Fatal().Err(err).Msg("Error reading scenarios")
 	}
 
-	client := openai.NewClient(cfg.OpenAIApiKey)
-	completions.SetClient(client)
-	log.Info().Msg("OpenAI client configured")
-
-	svr := server.Setup(debug)
+	majordomo, err := completions.NewMajordomo(cfg)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Error initializing Majordomo")
+	}
+	svr := server.NewServer(fmt.Sprintf(":%d", port), majordomo)
 	if svr == nil {
 		log.Fatal().Msg("Error setting up server")
 		return
 	}
+	if debug {
+		svr.SetDebugMode()
+	}
 	log.Info().Msgf("Server configured & running on port %d", port)
-	log.Fatal().Err(svr.Run(fmt.Sprintf(":%d", port))).
+	log.Fatal().Err(svr.Run()).
 		Msg("Majordomo server exited")
 }

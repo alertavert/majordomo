@@ -192,7 +192,7 @@ var _ = Describe("FilesystemStore", func() {
 		var store preprocessors.CodeStoreHandler
 		var codeMap = make(preprocessors.SourceCodeMap)
 
-		//var store preprocessors.CodeStoreHandler
+		//var store preprocessors.CodeStore
 		BeforeEach(func() {
 			// Creates a new temporary directory as the destination directory
 			_, destDir, err = SetupTestFiles()
