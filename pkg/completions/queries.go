@@ -35,9 +35,12 @@ type Majordomo struct {
 	CodeStore preprocessors.CodeStoreHandler
 	// The Model to use
 	Model string
+
+	// The Sessions map, contains the history of all conversations.
+	// TODO: this should be moved to a database.
+	Sessions map[string]*Session
 }
 
-// NewMajordomo creates a new Majordomo instance from a Config struct.
 func NewMajordomo(cfg *config.Config) (*Majordomo, error) {
 	var assistant = new(Majordomo)
 	assistant.Client = openai.NewClient(cfg.OpenAIApiKey)
@@ -63,6 +66,7 @@ func NewMajordomo(cfg *config.Config) (*Majordomo, error) {
 	} else {
 		assistant.Model = cfg.Model
 	}
+	assistant.Sessions = make(map[string]*Session)
 	log.Debug().
 		Str("model", assistant.Model).
 		Str("active_project", cfg.ActiveProject).
@@ -71,57 +75,31 @@ func NewMajordomo(cfg *config.Config) (*Majordomo, error) {
 	return assistant, nil
 }
 
-// FIXME: All the conversations should be indexed by the session ID, made up of the Project/Scenario
-var (
-	userPrompts  []string
-	botResponses []string
-)
-
-// TODO: create a type to manage each conversation, and store them in a map.
-// TODO: the key for the map should be the session ID, which is a combination of the project and scenario.
-// TODO: the value should be a struct that holds the sequence of prompts and bot responses.
-
-func BuildMessages(prompt *PromptRequest) ([]openai.ChatCompletionMessage, error) {
-	messages := make([]openai.ChatCompletionMessage, 0,
-		len(userPrompts)+len(botResponses)+3)
-	s := GetScenarios()
-	if s == nil {
-		return nil, fmt.Errorf("no scenarios found")
+func (m *Majordomo) NewSessionIfNotExists(sessionID string) *Session {
+	if sessionID == "" {
+		log.Error().Msg("empty session ID")
+		return nil
 	}
-	scenario, found := s.Scenarios[prompt.Scenario]
-	if !found {
-		return nil, fmt.Errorf("no scenario found for %s", prompt.Scenario)
+	sess, found := m.Sessions[sessionID]
+	if found {
+		return sess
 	}
-	// Common instructions for all scenarios.
-	messages = append(messages, openai.ChatCompletionMessage{
-		Role:    openai.ChatMessageRoleSystem,
-		Content: s.GetCommon(),
-	})
-	// Scenario-specific instructions.
-	messages = append(messages, openai.ChatCompletionMessage{
-		Role:    openai.ChatMessageRoleSystem,
-		Content: scenario,
-	})
-	// The user's prompt.
-	userPrompts = append(userPrompts, prompt.Prompt)
+	sess = NewSession(sessionID)
+	m.Sessions[sessionID] = sess
+	return sess
+}
 
+func (m *Majordomo) BuildMessages(prompt *PromptRequest) ([]openai.ChatCompletionMessage, error) {
 	// FIXME: we should retrieve the stored conversation from the database.
-	// The stored conversation thus far.
-	for i := 0; i < len(userPrompts); i++ {
-		messages = append(messages,
-			openai.ChatCompletionMessage{
-				Role:    openai.ChatMessageRoleUser,
-				Content: userPrompts[i],
-			})
-		if i < len(botResponses) {
-			messages = append(messages,
-				openai.ChatCompletionMessage{
-					Role:    openai.ChatMessageRoleAssistant,
-					Content: botResponses[i],
-				})
+	sess := m.NewSessionIfNotExists(prompt.Session)
+	if !sess.initialized {
+		err := sess.Init(prompt.Scenario)
+		if err != nil {
+			return nil, err
 		}
 	}
-	return messages, nil
+	sess.AddPrompt(prompt.Prompt)
+	return sess.GetConversation(), nil
 }
 
 // FillPrompt fills the prompt with the code snippets.
@@ -163,7 +141,7 @@ func (m *Majordomo) QueryBot(prompt *PromptRequest) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	messages, err := BuildMessages(prompt)
+	messages, err := m.BuildMessages(prompt)
 	if err != nil {
 		return "", err
 	}
@@ -175,6 +153,7 @@ func (m *Majordomo) QueryBot(prompt *PromptRequest) (string, error) {
 		Msg("querying LLM")
 
 	resp, err := m.Client.CreateChatCompletion(
+		// TODO: we should have a user-configurable timeout.
 		context.Background(),
 		openai.ChatCompletionRequest{
 			Model:    m.Model,
@@ -186,12 +165,10 @@ func (m *Majordomo) QueryBot(prompt *PromptRequest) (string, error) {
 	stopReason := resp.Choices[0].FinishReason
 	if stopReason != "stop" {
 		if stopReason == "length" {
-			log.Debug().Msg("too many tokens, response truncated")
-			botResponses = botResponses[1:]
-			userPrompts = userPrompts[1:]
-			return "", fmt.Errorf("too many tokens (%d), "+
-				"dropped older conversations. Please re-send the request, "+
-				"or consider starting a new conversation", resp.Usage.TotalTokens)
+			log.Debug().Msg("too many tokens")
+			return "", fmt.Errorf("too many tokens (%d). "+
+				"Please consider truncating it, or starting a new conversation",
+				resp.Usage.TotalTokens)
 		}
 		return "", fmt.Errorf("stopped for reason other than done: %s", stopReason)
 	}
@@ -207,7 +184,13 @@ func (m *Majordomo) QueryBot(prompt *PromptRequest) (string, error) {
 	if err != nil {
 		log.Err(err).Msg("error storing source code")
 	}
-	botResponses = append(botResponses, botSays)
+	sess, found := m.Sessions[prompt.Session]
+	if !found {
+		log.Error().
+			Str("session", prompt.Session).
+			Msg("session not found")
+	}
+	sess.AddResponse(botSays)
 	log.Debug().
 		Int("tokens", resp.Usage.TotalTokens).
 		Int("conversation_len", len(messages)).
@@ -228,10 +211,4 @@ func (m *Majordomo) SpeechToText(audioFile multipart.File) (string, error) {
 		return "", fmt.Errorf("error converting audio to text: %v", err)
 	}
 	return resp.Text, nil
-}
-
-// RemoveConversation deleted all past responses and prompts
-func RemoveConversation() {
-	userPrompts = userPrompts[:0]
-	botResponses = botResponses[:0]
 }
