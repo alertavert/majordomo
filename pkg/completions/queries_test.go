@@ -1,70 +1,76 @@
-/*
- * Copyright (c) 2023 AlertAvert.com. All rights reserved.
- */
-
 package completions_test
 
 import (
-	"fmt"
+	"github.com/alertavert/gpt4-go/pkg/completions"
+	"github.com/alertavert/gpt4-go/pkg/config"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/sashabaranov/go-openai"
-
-	"github.com/alertavert/gpt4-go/pkg/completions"
 )
 
 const (
-	TestScenariosLocation = "../../testdata/test_scenarios.yaml"
-	NoClientError         = "OpenAI client not initialized"
-	NoScenarioError       = "no scenario found for %s"
+	TestConfigLocation = "../../testdata/test_config.yaml"
 )
 
-var _ = Describe("Building Prompts", func() {
+var _ = Describe("Majordomo", func() {
 	var (
-		req completions.PromptRequest
+		majordomo *completions.Majordomo
+		cfg       *config.Config
+		err       error
 	)
+
 	BeforeEach(func() {
-		Expect(completions.ReadScenarios(TestScenariosLocation)).ShouldNot(HaveOccurred())
-		req = completions.PromptRequest{
-			Prompt:   "prompt",
-			Scenario: "test",
-			Session:  "session",
-		}
+		// Load configuration
+		cfg, err = config.LoadConfig(TestConfigLocation)
+		Expect(err).NotTo(HaveOccurred())
+
+		// Create a new Majordomo instance
+		majordomo, err = completions.NewMajordomo(cfg)
+		Expect(err).NotTo(HaveOccurred())
 	})
-	Context("BuildMessages function", func() {
-		It("Should throw 'no scenario found' error", func() {
-			req.Scenario = "unknown"
-			_, err := completions.BuildMessages(&req)
-			Expect(err.Error()).To(Equal(fmt.Sprintf(NoScenarioError, "unknown")))
+
+	Describe("Session Handling", func() {
+		It("can create a new session", func() {
+			session := majordomo.NewSessionIfNotExists("new-session-id")
+			Expect(session).NotTo(BeNil())
+			Expect(session.SessionID).To(Equal("new-session-id"))
 		})
-		It("Should create messages when no error", func() {
-			completions.RemoveConversation()
-			messages, err := completions.BuildMessages(&req)
-			Expect(err).To(BeNil())
-			Expect(len(messages)).To(Equal(3))
+
+		It("can retrieve an existing session", func() {
+			majordomo.NewSessionIfNotExists("existing-session-id")
+			session := majordomo.NewSessionIfNotExists("existing-session-id")
+			Expect(session).NotTo(BeNil())
+			Expect(session.SessionID).To(Equal("existing-session-id"))
 		})
-		It("Should append Messages in the Correct Order", func() {
-			completions.RemoveConversation()
-			messages, err := completions.BuildMessages(&req)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(len(messages)).To(Equal(3))
-			Expect(messages[0].Role).To(Equal(openai.ChatMessageRoleSystem))
-			Expect(messages[1].Role).To(Equal(openai.ChatMessageRoleSystem))
-			Expect(messages[2].Role).To(Equal(openai.ChatMessageRoleUser))
-			Expect(messages[0].Content).To(Equal("common test scenario\n"))
-			Expect(messages[1].Content).To(Equal("This is a test scenario\n"))
-		})
-		It("Should continue to append Messages in the Correct Order", func() {
-			completions.RemoveConversation()
-			for i := 0; i < 10; i++ {
-				_, err := completions.BuildMessages(&req)
-				Expect(err).ToNot(HaveOccurred())
+
+		It("can build messages for the session", func() {
+			prompt := completions.PromptRequest{
+				Prompt:   "What’s the weather like today?",
+				Scenario: "some-scenario",
+				Session:  "session-for-messages",
 			}
-			req.Prompt = "Hello"
-			messages, _ := completions.BuildMessages(&req)
-			Expect(len(messages)).To(Equal(13))
-			Expect(messages[12].Role).To(Equal(openai.ChatMessageRoleUser))
-			Expect(messages[12].Content).To(Equal("Hello"))
+
+			// We need to monkey-patch the scenario, since we don't have a real one
+			completions.GetScenarios = func() *completions.Scenarios {
+				return &completions.Scenarios{
+					Common: "Here are some common instructions",
+					Scenarios: map[string]string{
+						"some-scenario": "Here are some instructions for the scenario",
+					},
+				}
+			}
+
+			// We need to initialize the session with the scenario first
+			session := majordomo.NewSessionIfNotExists(prompt.Session)
+			err := session.Init(prompt.Scenario)
+			Expect(err).NotTo(HaveOccurred())
+
+			messages, err := majordomo.BuildMessages(&prompt)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(messages).NotTo(BeEmpty())
+			Expect(len(messages)).To(Equal(3))
+			Expect(messages[0].Content).To(Equal("Here are some common instructions"))
+			Expect(messages[1].Content).To(Equal("Here are some instructions for the scenario"))
+			Expect(messages[2].Content).To(Equal("What’s the weather like today?"))
 		})
 	})
 })

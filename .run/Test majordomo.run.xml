@@ -1,0 +1,18 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Test majordomo" type="GoTestRunConfiguration" factoryName="Go Test">
+    <module name="majordomo" />
+    <working_directory value="$PROJECT_DIR$" />
+    <go_parameters value="./pkg/preprocessors ./pkg/completions ./pkg/server" />
+    <EXTENSION ID="software.aws.toolkits.jetbrains.core.execution.GoAwsConnectionRunConfigurationExtension">
+      <option name="credential" />
+      <option name="region" />
+      <option name="useCurrentConnection" value="false" />
+    </EXTENSION>
+    <kind value="DIRECTORY" />
+    <package value="github.com/alertavert/gpt4-go/pkg/parser" />
+    <directory value="$PROJECT_DIR$" />
+    <filePath value="$PROJECT_DIR$" />
+    <framework value="gotest" />
+    <method v="2" />
+  </configuration>
+</component>

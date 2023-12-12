@@ -18,7 +18,7 @@ func promptHandler(m *completions.Majordomo) func(c *gin.Context) {
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"response": "error",
-				"message":  "No prompt received",
+				"message":  err.Error(),
 			})
 			return
 		}
