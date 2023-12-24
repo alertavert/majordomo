@@ -3,6 +3,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPen, faTrash } from '@fortawesome/free-solid-svg-icons'
 
+import '../styles/TopSelector.css';
+
 const TopSelector = ({ scenarios, onScenarioChange, onConversationChange }) => {
 
     // These will be filled dynamically as the conversation progress.

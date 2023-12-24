@@ -1,0 +1,18 @@
+.conversation-btn {
+    color: #d4d4d4; /* Light color for text for readability on the dark background */
+    background-color: #3d3b3b; /* Dark background color matching a developer's IDE */
+    border: 1px solid #555; /* Optional: subtle border color for the button */
+}
+
+/* Change the color for the icons inside the button */
+.conversation-btn .fa-pen,
+.conversation-btn .fa-trash {
+    color: #d4d4d4;
+}
+
+/* Add styles for hover effect */
+.conversation-btn:hover,
+.conversation-btn:focus {
+    background-color: #555; /* Slightly lighter background on hover */
+    border-color: #777; /* Slightly lighter border on hover */
+}

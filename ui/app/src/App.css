@@ -3,31 +3,15 @@ html, body {
     padding: 0;
     height: 100%;
     width: 100%;
-    overflow: hidden;
-    background: transparent;
-}
-
-body::before {
-    content: "";
-    position: fixed; /* Changed from absolute to fixed */
-    top: 0;
-    left: 0;
-    height: 100%;
-    width: 100%;
-    z-index: -1;
-    background: url(../public/background.jpg) no-repeat center center fixed;
-    -webkit-background-size: cover;
-    -moz-background-size: cover;
-    -o-background-size: cover;
-    background-size: cover;
+    background: #1e1e1e; /* Updated background color to a darker shade similar to a developer's IDE */
 }
 
 .App {
     text-align: left;
-    background: transparent;
-    min-height: 100vh; /* Ensure App takes up full browser height */
+    background: transparent; /* You may want to change this as well to a specific color if needed */
+    min-height: 100vh;
+    overflow: auto;
 }
-
 
 .App-header {
     background-color: transparent;
@@ -45,18 +29,18 @@ body::before {
 }
 
 .font-monospace {
-    color: #0a0100;
+    color: #d4d4d4; /* Lighter font color for better contrast on the dark background */
 }
 
 .title, h6 {
-    color: #e3d3ea;
+    color: #cccccc; /* Lighter font color for better contrast on the dark background */
 }
 
 .footer {
     margin-top: 20px;
     margin-left: 10px;
     font-size: 12px;
-    color: #e3d3ea;
+    color: #cccccc; /* Adjusted to a lighter shade for visibility on the darker background */
 }
 
 .ask-btn {
@@ -93,6 +77,7 @@ body::before {
 }
 
 textarea.prompt-box, textarea.prompt-box:focus {
-    color: #eeeeea;
-    background-color: #2e2e96;
+    border: 1px solid #3c3c3c; /* Optional: subtle border color for the text area */
+    color: #d4d4d4; /* Light color for text for readability on the dark background */
+    background-color: #3d3b3b; /* Dark background color matching a developer's IDE */
 }

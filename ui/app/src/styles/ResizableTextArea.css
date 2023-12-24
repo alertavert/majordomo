@@ -1,6 +1,13 @@
 
+
 .resizable-textarea, .resizable-textarea:focus {
-    background-color: #2e2e96;
-    color: antiquewhite;
-    cursor: grab;
+    cursor: text; /* Changed from grab to text to indicate it's editable */
+
+    border: 1px solid #3c3c3c; /* Optional: subtle border color for the text area */
+    color: #d4d4d4; /* Light color for text for readability on the dark background */
+    background-color: #3d3b3b; /* Dark background color matching a developer's IDE */
+
+    font-family: 'Consolas', 'Monaco', 'Lucida Console', 'Liberation Mono', 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', 'Courier New', monospace; /* Monospace font for the technical, source code appearance */
+    white-space: nowrap; /* Prevents text from wrapping to next line */
+    overflow-x: auto; /* Allows horizontal scrolling when text exceeds the element's width */
 }
