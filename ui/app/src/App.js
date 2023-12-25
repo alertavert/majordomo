@@ -20,17 +20,11 @@ const SpeechApiUrl = MajordomoServerUrl + '/command';
 const PromptApiUrl = MajordomoServerUrl + '/prompt';
 const ScenariosApiUrl = MajordomoServerUrl + '/scenarios';
 
-const Mp3Recorder = new MicRecorder({bitRate: 128});
 
 function App() {
     const [responseValue, setResponseValue] = useState('Bot says...');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-
-    const [isRecording, setIsRecording] = useState(false);
-    const [isBlocked, setIsBlocked] = useState(false);
-    const [blobURL, setBlobURL] = useState('')
-
     const [textareaValue, setTextareaValue] = useState('');
     const refTextAreaValue = useRef(textareaValue);
     refTextAreaValue.current = textareaValue;
@@ -70,59 +64,32 @@ function App() {
         setSelectedConversation(conversation);
     };
 
-    const startRecording = async () => {
+    const handleAudioRecording = async (blob) => {
         setError(null);
-        if (isBlocked) {
-            setError('Please give permission for using microphone');
-        } else {
-            Mp3Recorder.start().then(() => {
-                setIsRecording(true);
-            }).catch((e) => setError(e.message));
+        // Send the blob to the server here or in separate function
+        try {
+            let formData = new FormData();
+            formData.append('audio', blob, 'audio.mp3');
+            const response = await fetch(SpeechApiUrl, {
+                method: 'POST',
+                body: formData,
+            });
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Received:', data.message.length, 'characters');
+                setTextareaValue(data.message);
+            } else {
+                const errorData = await response.json(); // Parse the error response as JSON
+                setError('Error (' + response.status + '): ' + errorData.message);
+            }
+        } catch (error) {
+            setError('Cannot convert Audio: ' + error);
         }
     };
 
-    const stopRecording = async () => {
-        setError(null);
-        setIsRecording(false);
-        Mp3Recorder
-            .stop()
-            .getMp3()
-            .then(async ([buffer, blob]) => {
-                const blobURL = URL.createObjectURL(blob)
-                setBlobURL(blobURL);
-                // Send the blob to the server here or in separate function
-                try {
-                    let formData = new FormData();
-                    formData.append('audio', blob, 'audio.mp3');
-                    const response = await fetch(SpeechApiUrl, {
-                        method: 'POST',
-                        body: formData,
-                    });
-                    if (response.ok) {
-                        const data = await response.json();
-                        console.log('Received:', data.message.length, 'characters');
-                        setTextareaValue(data.message);
-                    } else {
-                        const errorData = await response.json(); // Parse the error response as JSON
-                        setError('Error (' + response.status + '): ' + errorData.message);
-                    }
-                } catch (error) {
-                    setError('Cannot convert Audio: ' + error);
-                }
-            }).catch((e) => setError('Failed trying to convert audio: ' + e));
-    };
-
-    useEffect(() => {
-        navigator.mediaDevices.getUserMedia({audio: true})
-            .then(function (stream) {
-                console.log('Permission Granted');
-                setIsBlocked(false);
-            })
-            .catch(function (err) {
-                console.log('Permission Denied');
-                setIsBlocked(true);
-            });
-    }, []);
+    const handleAudioRecordingError = (error) => {
+        setError('Audio Recording Error: ' + error);
+    }
 
     const handleFormSubmit = async (content) => {
         console.log('Sending Query to Majordomo (' + content.length + ' chars)')
@@ -166,11 +133,8 @@ function App() {
                 scenarios={Scenarios}
                 onScenarioChange={handleScenarioChange}
                 onConversationChange={handleConversationChange}
-            />
-            <AudioRecorder
-                startRecording={startRecording}
-                stopRecording={stopRecording}
-                isRecording={isRecording}
+                handleAudioRecording={handleAudioRecording}
+                handleAudioRecordingError={handleAudioRecordingError}
             />
             <PromptBox
                 onSubmit={handleFormSubmit}
@@ -215,9 +179,9 @@ function PromptBox({onSubmit, textareaValue, setTextareaValue}) {
                           onChange={handleTextareaChange}
                 />
                 <div className="d-flex justify-content-end">
-                <button className="btn btn-primary btn-sm ask-btn"
-                        onClick={handleSubmit}>Ask Majordomo
-                </button>
+                    <button className="btn btn-primary btn-sm ask-btn"
+                            onClick={handleSubmit}>Ask Majordomo
+                    </button>
                 </div>
             </div>
         </div>
