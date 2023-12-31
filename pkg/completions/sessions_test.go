@@ -112,7 +112,7 @@ var _ = Describe("Session", func() {
 		It("should not create session for uninitialized scenarios", func() {
 			err := session.Init("non-initialized-id")
 			Expect(err).To(HaveOccurred())
-			Ω(err.Error()).To(ContainSubstring("no scenarios found"))
+			Ω(err.Error()).To(ContainSubstring("no scenario found"))
 		})
 	})
 })

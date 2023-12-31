@@ -66,7 +66,7 @@ build: $(bin) ## Builds the server binary and the React UI
 .PHONY: test
 test: $(srcs) $(test_srcs)  ## Runs all tests
 	@mkdir -p build/reports
-	ginkgo -p -cover -coverprofile=coverage.out -outputdir=build/reports $(pkgs)
+	ginkgo -p -keepGoing -cover -coverprofile=coverage.out -outputdir=build/reports $(pkgs)
 
 .PHONY: watch
 watch: $(srcs) $(test_srcs)  ## Runs all tests every time a source or test file changes

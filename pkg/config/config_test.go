@@ -18,7 +18,7 @@ var _ = Describe("Config", func() {
 	Describe("LoadConfig", func() {
 		Context("with non-existing config path", func() {
 			It("should fail", func() {
-				_, err := config.LoadConfig("/tmp/config.yaml")
+				_, err := config.LoadConfig("/etc/fake-config.yaml")
 				Expect(err).To(HaveOccurred())
 			})
 		})

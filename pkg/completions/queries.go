@@ -47,6 +47,13 @@ func NewMajordomo(cfg *config.Config) (*Majordomo, error) {
 	if assistant.Client == nil {
 		return nil, fmt.Errorf("error initializing OpenAI client")
 	}
+	if len(cfg.Projects) == 0 {
+		// TODO: we should have a default project.
+		return nil, fmt.Errorf("no projects configured")
+	}
+	if cfg.ActiveProject == "" {
+		cfg.ActiveProject = cfg.Projects[0].Name
+	}
 
 	// Based on the active project, we set the code snippets directory.
 	for _, p := range cfg.Projects {
@@ -54,11 +61,14 @@ func NewMajordomo(cfg *config.Config) (*Majordomo, error) {
 			destDir := strings.Join([]string{cfg.CodeSnippetsDir, p.Name}, "/")
 			assistant.CodeStore = preprocessors.NewFilesystemStore(p.Location, destDir)
 			log.Debug().
+				Str("project", p.Name).
+				Str("location", p.Location).
 				Str("dest", destDir).
-				Str("src", p.Location).
 				Msg("code snippets filesystem store initialized")
 			break
 		}
+	}
+	if assistant.CodeStore == nil {
 		return nil, fmt.Errorf("no project found for %s", cfg.ActiveProject)
 	}
 	if cfg.Model == "" {

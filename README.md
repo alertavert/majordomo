@@ -1,6 +1,8 @@
 # Majordomo - Code generation Bot
 *Created by M. Massenzio &copy; 2023 AlertAvert.com All Rights Reserved*
 
+[![Go](https://github.com/alertavert/majordomo/actions/workflows/go.yml/badge.svg?branch=main)](https://github.com/alertavert/majordomo/actions/workflows/go.yml)
+
 # Build & run Server
 
 `make help` shows all the available commands.
