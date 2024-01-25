@@ -27,13 +27,15 @@ func (p Project) String() string {
 }
 
 type Config struct {
-	LoadedFrom        string
-	OpenAIApiKey      string    `yaml:"api_key"`
-	ScenariosLocation string    `yaml:"scenarios"`
-	CodeSnippetsDir   string    `yaml:"code_snippets"`
-	Projects          []Project `yaml:"projects"`
-	Model             string    `yaml:"model"`
-	ActiveProject     string    `yaml:"active_project"`
+	LoadedFrom        string `yaml:"-"`
+	OpenAIApiKey      string `yaml:"api_key"`
+	ScenariosLocation string `yaml:"scenarios"`
+	CodeSnippetsDir   string `yaml:"code_snippets"`
+	Model             string `yaml:"model"`
+
+	// TODO: Projects should be stored in a database.
+	ActiveProject string    `yaml:"active_project"`
+	Projects      []Project `yaml:"projects"`
 }
 
 // Save writes the Config to a YAML file at the given filePath.
@@ -80,6 +82,11 @@ func LoadConfig(filepath string) (*Config, error) {
 		return nil, fmt.Errorf("error unmarshaling yaml: %w", err)
 	}
 
+	if len(c.Projects) == 0 {
+		// TODO: we should have a default project.
+		return nil, fmt.Errorf("no projects configured")
+	}
+
 	c.LoadedFrom = filepath
 	// Converts relative paths in the test_config.yaml to absolute paths
 	// by pre-pending the path to the config file.
@@ -94,4 +101,17 @@ func LoadConfig(filepath string) (*Config, error) {
 		c.ActiveProject = c.Projects[0].Name
 	}
 	return &c, nil
+}
+
+func (c *Config) GetProject(name string) *Project {
+	for _, p := range c.Projects {
+		if p.Name == name {
+			return &p
+		}
+	}
+	return nil
+}
+
+func (c *Config) GetActiveProject() *Project {
+	return c.GetProject(c.ActiveProject)
 }

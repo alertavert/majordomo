@@ -39,6 +39,10 @@ type Majordomo struct {
 	// The Sessions map, contains the history of all conversations.
 	// TODO: this should be moved to a database.
 	Sessions map[string]*Session
+
+	// The configuration object to manage the Projects in the server handlers
+	// TODO: Projects should be moved to a database.
+	Config *config.Config
 }
 
 func NewMajordomo(cfg *config.Config) (*Majordomo, error) {
@@ -47,41 +51,31 @@ func NewMajordomo(cfg *config.Config) (*Majordomo, error) {
 	if assistant.Client == nil {
 		return nil, fmt.Errorf("error initializing OpenAI client")
 	}
-	if len(cfg.Projects) == 0 {
-		// TODO: we should have a default project.
-		return nil, fmt.Errorf("no projects configured")
-	}
-	if cfg.ActiveProject == "" {
-		cfg.ActiveProject = cfg.Projects[0].Name
-	}
 
-	// Based on the active project, we set the code snippets directory.
-	for _, p := range cfg.Projects {
-		if p.Name == cfg.ActiveProject {
-			destDir := strings.Join([]string{cfg.CodeSnippetsDir, p.Name}, "/")
-			assistant.CodeStore = preprocessors.NewFilesystemStore(p.Location, destDir)
-			log.Debug().
-				Str("project", p.Name).
-				Str("location", p.Location).
-				Str("dest", destDir).
-				Msg("code snippets filesystem store initialized")
-			break
-		}
-	}
-	if assistant.CodeStore == nil {
-		return nil, fmt.Errorf("no project found for %s", cfg.ActiveProject)
-	}
+	// The LLM Model to use.
 	if cfg.Model == "" {
 		assistant.Model = DefaultModel
 	} else {
 		assistant.Model = cfg.Model
 	}
 	assistant.Sessions = make(map[string]*Session)
+
+	// Based on the active project, we set the code snippets directory.
+	p := cfg.GetActiveProject()
+	if p == nil {
+		return nil, fmt.Errorf("no project found for %s", cfg.ActiveProject)
+	}
+	destDir := strings.Join([]string{cfg.CodeSnippetsDir, p.Name}, "/")
+	assistant.CodeStore = preprocessors.NewFilesystemStore(p.Location, destDir)
+	assistant.Config = cfg
+
 	log.Debug().
 		Str("model", assistant.Model).
 		Str("active_project", cfg.ActiveProject).
+		Str("source_dir", p.Location).
+		Str("code_snippets", destDir).
 		Str("snippets", cfg.CodeSnippetsDir).
-		Msg("assistant initialized")
+		Msg("Majordomo assistant initialized")
 	return assistant, nil
 }
 

@@ -52,7 +52,7 @@ func (s *Session) Init(scenarioId string) error {
 	}
 	scenario, found := sc.Scenarios[scenarioId]
 	if !found {
-		return fmt.Errorf("no scenario found for %s", scenarioId)
+		return fmt.Errorf("no scenario %s found", scenarioId)
 	}
 	s.ScenarioID = scenarioId
 	// Common instructions for all scenarios.
