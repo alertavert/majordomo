@@ -12,9 +12,6 @@ import (
 	"strings"
 )
 
-const (
-	TestConfigLocation = "../../testdata/test_config_projects.yaml"
-)
 
 var _ = Describe("/projects endpoint", func() {
 	var (

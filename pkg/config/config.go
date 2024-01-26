@@ -41,6 +41,7 @@ type Config struct {
 // Save writes the Config to a YAML file at the given filePath.
 // If filePath is empty, it will write to the location from which the
 // Config was loaded.
+// FIXME: we need to protect multiple writers to the same file using a mux.
 func (c *Config) Save(filepath string) error {
 	data, err := yaml.Marshal(&c)
 	if err != nil {
@@ -62,6 +63,7 @@ func (c *Config) Save(filepath string) error {
 // If filepath is empty, it will read from the default location, unless the
 // MAJORDOMO_CONFIG environment variable is set, in which case it will read
 // from that location.
+// FIXME: we need to protect races with a writer to the same file using a mux.
 func LoadConfig(filepath string) (*Config, error) {
 	var c Config
 
