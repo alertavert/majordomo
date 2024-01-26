@@ -45,9 +45,24 @@ func (s *Server) setupHandlers() {
 	r.POST("/prompt", promptHandler(s.assistant))
 	r.GET("/scenarios", scenariosHandler)
 
+	// Projects routes
+	cfg := s.assistant.Config
+	r.GET("/projects", projectsGetHandler(cfg))
+	r.GET("/projects/:project_name", projectDetailsGetHandler(cfg))
+	r.POST("/projects", projectPostHandler(cfg))
+	r.PUT("/projects/:project_name", projectPutHandler(cfg))
+	r.DELETE("/projects/:project_name", projectDeleteHandler(cfg))
+
 	// Static routes
 	r.Static("/web", "build/ui")
 	r.Static("/static/css", "build/ui/static/css")
 	r.Static("/static/js", "build/ui/static/js")
 	r.Static("/static/media", "build/ui/static/media")
+}
+
+// SetupTestRoutes is a helper function to set up the routes for testing.
+// Do not use this function in production code.
+func SetupTestRoutes(r *gin.Engine, assistant *completions.Majordomo) {
+	server := &Server{router: r, assistant: assistant}
+	server.setupHandlers()
 }

@@ -2,8 +2,6 @@
  * Copyright (c) 2023 AlertAvert.com. All rights reserved.
  */
 
-// Author: M. Massenzio (marco@alertavert.com), 8/21/23
-
 package config_test
 
 import (
@@ -12,6 +10,11 @@ import (
 	"os"
 
 	"github.com/alertavert/gpt4-go/pkg/config"
+)
+
+const (
+	testConfigLocation         = "../../testdata/test_config.yaml"
+	testConfigProjectsLocation = "../../testdata/test_config_projects.yaml"
 )
 
 var _ = Describe("Config", func() {
@@ -23,19 +26,15 @@ var _ = Describe("Config", func() {
 			})
 		})
 		Context("with existing config path", func() {
-			var location string
-			BeforeEach(func() {
-				location = "../../testdata/test_config.yaml"
-			})
 			It("should succeed", func() {
-				c, err := config.LoadConfig(location)
+				c, err := config.LoadConfig(testConfigLocation)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(c.OpenAIApiKey).To(Equal("test-key"))
 				Expect(c.ScenariosLocation).To(HaveSuffix("test/scenarios.yaml"))
 				Expect(c.CodeSnippetsDir).To(HaveSuffix("code/snippets"))
 			})
 			It("should expand relative paths", func() {
-				c, err := config.LoadConfig(location)
+				c, err := config.LoadConfig(testConfigLocation)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(c.ScenariosLocation).To(HavePrefix("../../testdata"))
 				Expect(c.CodeSnippetsDir).To(HavePrefix("../../testdata"))
@@ -43,12 +42,8 @@ var _ = Describe("Config", func() {
 			})
 		})
 		Context("with configured projects", func() {
-			var location string
-			BeforeEach(func() {
-				location = "../../testdata/test_config_projects.yaml"
-			})
 			It("should correctly load projects", func() {
-				c, err := config.LoadConfig(location)
+				c, err := config.LoadConfig(testConfigProjectsLocation)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(c.Projects).To(HaveLen(2))
 
@@ -90,20 +85,15 @@ var _ = Describe("Config", func() {
 				err := c.Save(filepath)
 				Expect(err).NotTo(HaveOccurred())
 
-				content, err := os.ReadFile(filepath)
+				content, err := config.LoadConfig(filepath)
 				Expect(err).NotTo(HaveOccurred())
 
-				Expect(string(content)).To(ContainSubstring("test-key"))
-				Expect(string(content)).To(ContainSubstring("test/scenarios.yaml"))
-				Expect(string(content)).To(ContainSubstring("code/snippets"))
-				Expect(string(content)).To(ContainSubstring("test-project"))
-				Expect(string(content)).To(ContainSubstring("test-description"))
-				Expect(string(content)).To(ContainSubstring("test/location"))
-				Expect(string(content)).To(ContainSubstring("test-project-2"))
-				Expect(string(content)).To(ContainSubstring("test-description-2"))
-				Expect(string(content)).To(ContainSubstring("test/location-2"))
+				Expect(content.OpenAIApiKey).To(Equal("test-key"))
+				Expect(content.ScenariosLocation).To(HaveSuffix("test/scenarios.yaml"))
+				Expect(content.CodeSnippetsDir).To(HaveSuffix("code/snippets"))
+				Expect(content.Projects).To(HaveLen(2))
 			})
-		})
 
+		})
 	})
 })
