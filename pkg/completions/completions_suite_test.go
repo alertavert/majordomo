@@ -5,6 +5,7 @@
 package completions_test
 
 import (
+	"github.com/rs/zerolog"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -15,3 +16,8 @@ func TestCompletions(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Completions Suite")
 }
+
+var _ = BeforeSuite(func() {
+	// Silence the logs
+	zerolog.SetGlobalLevel(zerolog.Disabled)
+})

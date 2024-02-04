@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/alertavert/gpt4-go/pkg/config"
 	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog/log"
 	"net/http"
 	"strings"
 )
@@ -108,14 +109,22 @@ func projectPostHandler(cfg *config.Config) gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 			return
 		}
-		fmt.Println(newProject)
+		log.Debug().
+			Interface("new_project", newProject).
+			Msg("Creating new project")
 
 		// Check for the validity of the project name and uniqueness.
 		if !isProjectNameValid(newProject.Name) {
+			log.Error().
+				Str("project_name", newProject.Name).
+				Msg("Invalid project name")
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Project name contains invalid characters"})
 			return
 		}
 		if isProjectNameExists(newProject.Name, cfg.Projects) {
+			log.Error().
+				Str("project_name", newProject.Name).
+				Msg("Project already exists")
 			c.JSON(http.StatusConflict, gin.H{"error": "Project already exists"})
 			return
 		}
@@ -123,6 +132,7 @@ func projectPostHandler(cfg *config.Config) gin.HandlerFunc {
 		cfg.Projects = append(cfg.Projects, newProject)
 		if err := cfg.Save(""); err != nil {
 			errMsg := fmt.Sprintf("Failed to save new project: %s", err)
+			log.Error().Err(err).Msg(errMsg)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": errMsg})
 			return
 		}

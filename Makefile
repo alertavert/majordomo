@@ -7,9 +7,10 @@ GOARCH ?= amd64
 GOMOD := $(shell go list -m)
 
 # Versioning
-# The `version` is a static value, set in settings.yaml, and used to tag the release.
-version := $(shell cat settings.yaml | yq -r .version)
-# `release` is generated automatically from the most recent tag (version) and the
+# The `version` is a static value, set in settings.yaml, and ONLY used to tag the release.
+tag := $(shell cat settings.yaml | yq -r .version)
+
+# The `release` is generated automatically from the most recent tag (version) and the
 # current commit hash, and is used to tag the Docker image.
 release := $(shell git describe --tags --always --dirty="-dev")
 prog := majordomo
@@ -88,6 +89,11 @@ run: $(bin) ## Runs the server binary
 ##@ Container Management
 # Convenience targets to run locally containers and
 # setup the test environments.
+
+tag: ## Tags the current release
+	@echo "Tagging release $(tag)"
+	@git tag -a $(tag) -m "Release $(tag)"
+	@git push origin $(tag)
 
 container: ## Builds the container image
 	docker build -f $(dockerfile) -t $(image):$(release) .

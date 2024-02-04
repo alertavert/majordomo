@@ -1,7 +1,7 @@
 package server_test
 
 import (
-	"fmt"
+	"github.com/rs/zerolog"
 	"io"
 	"os"
 	"strings"
@@ -23,26 +23,32 @@ func MkTempConfigFile(src string) (dest string, err error) {
 	if err != nil {
 		return
 	}
-	defer sourceFile.Close()
+	defer func(sourceFile *os.File) {
+		Ω(sourceFile.Close()).Should(Succeed())
+	}(sourceFile)
 
 	var destFile *os.File
 	destFile, err = os.CreateTemp("", "test_config.*.yaml")
 	if err != nil {
 		return
 	}
-	defer destFile.Close()
+	defer func(destFile *os.File) {
+		Ω(destFile.Close()).Should(Succeed())
+	}(destFile)
 	dest = destFile.Name()
 
 	_, err = io.Copy(destFile, sourceFile)
-	if err != nil {
-		return
-	}
+	Ω(err).ShouldNot(HaveOccurred())
 	return
 }
 
 var TestConfigLocation string
 
 var _ = BeforeSuite(func() {
+	// Silence the logs
+	zerolog.SetGlobalLevel(zerolog.Disabled)
+
+	// Determine the prefix
 	curDir, _ := os.Getwd()
 	var prefix string
 	if strings.HasSuffix(curDir, "server") {
@@ -52,5 +58,4 @@ var _ = BeforeSuite(func() {
 	}
 	// Set up the test environment
 	TestConfigLocation = strings.Join([]string{prefix, "testdata/test_config.yaml"}, "/")
-	fmt.Println(">>> BeforeSuite - TestConfigLocation: ", TestConfigLocation)
 })
