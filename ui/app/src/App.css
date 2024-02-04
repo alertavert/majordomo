@@ -75,9 +75,3 @@ html, body {
     font-weight: bold;
     color: whitesmoke;
 }
-
-textarea.prompt-box, textarea.prompt-box:focus {
-    border: 1px solid #3c3c3c; /* Optional: subtle border color for the text area */
-    color: #d4d4d4; /* Light color for text for readability on the dark background */
-    background-color: #3d3b3b; /* Dark background color matching a developer's IDE */
-}

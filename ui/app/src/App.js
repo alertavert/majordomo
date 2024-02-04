@@ -8,10 +8,7 @@ import ResizableTextArea from './Components/ResizableTextArea';
 import Spinner from './Components/Spinner';
 import ErrorBox from "./Components/ErrorBox";
 import TopSelector from './Components/TopSelector';
-
-// MicRecorder for Audio Recording
-import MicRecorder from 'mic-recorder-to-mp3';
-import AudioRecorder from './Components/AudioRecorder';
+import PromptBox from './Components/PromptBox'; // Imported PromptBox component
 
 
 // FIXME: this should not be used, but the UI served directly from the host.
@@ -158,7 +155,7 @@ function Header() {
     );
 }
 
-function PromptBox({onSubmit, textareaValue, setTextareaValue}) {
+function OldPromptBox({onSubmit, textareaValue, setTextareaValue}) {
     // const [textareaValue, setTextareaValue] = useState('');
 
     const handleSubmit = async () => {

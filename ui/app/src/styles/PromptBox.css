@@ -1,0 +1,52 @@
+.prompt-box-container {
+    position: relative; /* Required to position the clear button absolutely inside the container */
+}
+
+.prompt-box-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+textarea.prompt-box {
+    position: relative; /* Set relative to contain the absolute button */
+    /* margin-top: 1rem; /* Optional: Add space between the header and the textarea */
+    border: 1px solid #3c3c3c; /* Subtle border color for the text area */
+    color: #d4d4d4; /* Light color for text for readability on the dark background */
+    background-color: #3d3b3b; /* Dark background color */
+
+    padding-top: 30px; /* Make space for the clear button */
+    max-height: 80vh; /* Maximum height of textarea is 50% of viewport height */
+    min-height: 20vh; /* Minimum height based on em scale for 20-30 lines approximately */
+    overflow-y: auto; /* Allows scrolling when content exceeds the height */
+}
+
+.textarea-btn {
+    position: absolute; /* Position the clear button absolutely inside the textarea */
+    top: 25px; /* Position from the top */
+    background: none;
+    border: none;
+    color: #a5a9a5; /* Similar style to the top selector */
+    cursor: pointer;
+    z-index: 10; /* Ensure the button is above all other content */
+}
+
+.btn-clear {
+    right: 5px; /* Position from the right */
+}
+.btn-copy {
+    right: 55px; /* Position from the right */
+}
+.btn-paste {
+    right: 30px; /* Position from the right */
+}
+
+.textarea-btn:hover {
+    color: #ffffff; /* Light color on hover to match the top selector styles */
+}
+
+textarea.prompt-box, textarea.prompt-box:focus {
+    border: 1px solid #3c3c3c; /* Optional: subtle border color for the text area */
+    color: #d4d4d4; /* Light color for text for readability on the dark background */
+    background-color: #3d3b3b; /* Dark background color matching a developer's IDE */
+}
