@@ -16,9 +16,9 @@ const LocationEnv = "MAJORDOMO_CONFIG"
 var DefaultConfigLocation = os.Getenv("HOME") + "/.majordomo/config.yaml"
 
 type Project struct {
-	Name        string `yaml:"name"`
-	Description string `yaml:"description,omitempty"`
-	Location    string `yaml:"location"`
+	Name        string `yaml:"name" json:"name"`
+	Description string `yaml:"description,omitempty" json:"description,omitempty"`
+	Location    string `yaml:"location" json:"location"`
 }
 
 // String function makes the Project type a valid fmt.Stringer
