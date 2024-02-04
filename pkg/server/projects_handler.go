@@ -9,14 +9,19 @@ import (
 	"strings"
 )
 
+type ProjectResponse struct {
+	ActiveProject string           `json:"active_project"`
+	Projects      []config.Project `json:"projects"`
+}
+
 // projectsGetHandler handles the GET request for the '/projects' endpoint.
 func projectsGetHandler(cfg *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		projectNames := make([]string, len(cfg.Projects))
-		for i, project := range cfg.Projects {
-			projectNames[i] = project.Name
+		response := ProjectResponse{
+			ActiveProject: cfg.ActiveProject,
+			Projects:      cfg.Projects,
 		}
-		c.JSON(http.StatusOK, projectNames)
+		c.JSON(http.StatusOK, response)
 	}
 }
 

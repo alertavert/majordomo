@@ -8,6 +8,7 @@
     background-color: #3d3b3b; /* Dark background color matching a developer's IDE */
 
     font-family: 'Consolas', 'Monaco', 'Lucida Console', 'Liberation Mono', 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', 'Courier New', monospace; /* Monospace font for the technical, source code appearance */
-    white-space: nowrap; /* Prevents text from wrapping to next line */
+    white-space: pre-wrap; /* Prevents text from wrapping to next line */
     overflow-x: auto; /* Allows horizontal scrolling when text exceeds the element's width */
+
 }
