@@ -7,9 +7,9 @@ import '../styles/TopSelector.css';
 import AudioRecorder from "./AudioRecorder";
 
 const TopSelector = ({
-     scenarios, onScenarioChange, onConversationChange,
-     handleAudioRecording, handleAudioRecordingError
-}) => {
+                         scenarios, activeProject, onScenarioChange, onConversationChange,
+                         handleAudioRecording, handleAudioRecordingError
+                     }) => {
 
     // These will be filled dynamically as the conversation progress.
     const [conversations, setConversations] = useState(['Ask Majordomo']);
@@ -17,7 +17,6 @@ const TopSelector = ({
     const [isAdding, setIsAdding] = useState(false);
     const [newConversation, setNewConversation] = useState('');
     const [isBlocked, setIsBlocked] = useState(false);
-
 
     const inputRef = useRef(null);
 
@@ -71,13 +70,9 @@ const TopSelector = ({
 
     return (
         <div className="row top-selector">
-            <div className="col-md-3">
-                <span className="bold-label">Scenario:&nbsp;</span>
-                <select className='form-control' onChange={handleScenarioChange}>
-                    {scenarios.map((option, index) => (
-                        <option value={index + 1}>{option}</option>
-                    ))}
-                </select>
+            <div className="col-md-2">
+                <span className="bold-label">Active Project:&nbsp;</span>
+                <input readOnly className='form-control' value={activeProject}/>
             </div>
             <div className="col-md-3">
                 <span className="bold-label">Conversation:&nbsp;</span>
@@ -103,6 +98,14 @@ const TopSelector = ({
                 {conversations.length > 1 &&
                     <button className="btn btn-outline-dark btn-sm conversation-btn" onClick={deleteConversation}>
                         <FontAwesomeIcon icon={faTrash}/></button>}
+            </div>
+            <div className="col-md-3">
+                <span className="bold-label">Scenario:&nbsp;</span>
+                <span className='form-control' onChange={handleScenarioChange}>
+                    {scenarios.map((option, index) => (
+                        <option value={index + 1}>{option}</option>
+                    ))}
+                </span>
             </div>
             <div className="col-md-2">
                 {isBlocked ? <span>Microphone access denied.</span> :

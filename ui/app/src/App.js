@@ -10,12 +10,13 @@ import ErrorBox from "./Components/ErrorBox";
 import TopSelector from './Components/TopSelector';
 import PromptBox from './Components/PromptBox'; // Imported PromptBox component
 
+import { Logger } from "./Services/logger";
+import {fetchProjects, fetchScenarios} from './Services/api'; // Import fetchScenarios function
 
 // FIXME: this should not be used, but the UI served directly from the host.
 const MajordomoServerUrl = 'http://localhost:5005';
 const SpeechApiUrl = MajordomoServerUrl + '/command';
 const PromptApiUrl = MajordomoServerUrl + '/prompt';
-const ScenariosApiUrl = MajordomoServerUrl + '/scenarios';
 
 
 function App() {
@@ -32,25 +33,13 @@ function App() {
     // TopSelector state declarations
     const [selectedScenario, setSelectedScenario] = useState(null);
     const [selectedConversation, setSelectedConversation] = useState('Ask Majordomo');
+    const [activeProject, setActiveProject] = useState('');
 
     // Fetching scenarios on initial mount
     useEffect(() => {
-        // TODO: move to a separate function
-        fetch(ScenariosApiUrl)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Failed to retrieve scenarios: ${response.statusText}`);
-                }
-                return response.json();
-            })
-            .then((data) => {
-                if (data.scenarios.length === 0) {
-                    throw new Error('No scenarios found');
-                }
-                setScenarios(data.scenarios);
-                setSelectedScenario(data.scenarios[0]);
-            })
-            .catch(error => setError(`Could not retrieve Scenarios: ${error.message}`));
+        fetchScenarios(setScenarios, setSelectedScenario, setError);
+        fetchProjects(setActiveProject, setError);
+
     }, []);
 
     const handleScenarioChange = (scenario) => {
@@ -128,6 +117,7 @@ function App() {
             <Header/>
             <TopSelector
                 scenarios={Scenarios}
+                activeProject={activeProject}
                 onScenarioChange={handleScenarioChange}
                 onConversationChange={handleConversationChange}
                 handleAudioRecording={handleAudioRecording}
@@ -155,38 +145,8 @@ function Header() {
     );
 }
 
-function OldPromptBox({onSubmit, textareaValue, setTextareaValue}) {
-    // const [textareaValue, setTextareaValue] = useState('');
-
-    const handleSubmit = async () => {
-        onSubmit(textareaValue);
-    };
-
-    const handleTextareaChange = (event) => {
-        setTextareaValue(event.target.value);
-    };
-
-    return (
-        <div className="container-fluid">
-            <div className="jumbotron">
-                <h6>Your request:</h6>
-                <textarea className="form-control prompt-box"
-                          style={{height: '200px'}}
-                          value={textareaValue}
-                          onChange={handleTextareaChange}
-                />
-                <div className="d-flex justify-content-end">
-                    <button className="btn btn-primary btn-sm ask-btn"
-                            onClick={handleSubmit}>Ask Majordomo
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-}
-
 function ResponseBox({responseValue}) {
-    console.log('ResponseBox responseValue:', responseValue);
+    Logger.debug('ResponseBox responseValue:', responseValue);
     return (
         <div className="container-fluid">
             <div className="jumbotron">
@@ -201,7 +161,7 @@ function ResponseBox({responseValue}) {
 function Footer() {
     return (
         <div>
-            <p className="footer">&copy; 2023 AlertAvert. All rights reserved.</p>
+            <p className="footer">&copy; 2023-2024 AlertAvert. All rights reserved.</p>
         </div>
     )
 }
