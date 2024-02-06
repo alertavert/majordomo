@@ -80,7 +80,7 @@ var _ = Describe("Session", func() {
 			It("should initialize a new session with scenario", func() {
 				err := session.Init("mock-scenario-id")
 				Ω(err).NotTo(HaveOccurred())
-				Ω(session.ScenarioID).To(Equal("mock-scenario-id"))
+				Ω(session.Scenario).To(Equal("mock-scenario-id"))
 				Ω(session.IsEmpty()).To(BeTrue())
 				Ω(session.GetConversation()).Should(HaveLen(2))
 			})

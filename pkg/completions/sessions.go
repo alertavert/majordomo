@@ -9,9 +9,23 @@ import (
 	"github.com/sashabaranov/go-openai"
 )
 
+// Session represents a conversation session with the AI model.
+// It keeps track of the user prompts and bot responses in a conversation.
+//
+// The conversation is represented as a slice of ChatCompletionMessage structs,
+// with the scenario instructions at the beginning.
+// A Session is uniquely associated with a Project and, once initialized with a scenario,
+// it keeps track of the conversation history.
+// Both the Project and the Scenario, once set, cannot be changed.
 type Session struct {
-	SessionID  string
-	ScenarioID string
+	SessionID string
+	Scenario  string
+	Project   string
+
+	// TODO Currently not used
+	// DisplayName and Description are used to display the project in the UI.
+	DisplayName string
+	Description string
 
 	initialized   bool
 	systemPrompts []openai.ChatCompletionMessage
@@ -54,7 +68,7 @@ func (s *Session) Init(scenarioId string) error {
 	if !found {
 		return fmt.Errorf("no scenario %s found", scenarioId)
 	}
-	s.ScenarioID = scenarioId
+	s.Scenario = scenarioId
 	// Common instructions for all scenarios.
 	s.systemPrompts = append(s.systemPrompts, openai.ChatCompletionMessage{
 		Role:    openai.ChatMessageRoleSystem,
@@ -115,12 +129,13 @@ func (s *Session) GetBotResponses() []openai.ChatCompletionMessage {
 	return s.botResponses
 }
 
-func NewSession(sessionId string) *Session {
+func NewSession(sessionId, project string) *Session {
 	if sessionId == "" {
 		return nil
 	}
 	return &Session{
 		SessionID:     sessionId,
+		Project:       project,
 		initialized:   false,
 		systemPrompts: make([]openai.ChatCompletionMessage, 0),
 		userPrompts:   make([]openai.ChatCompletionMessage, 0),

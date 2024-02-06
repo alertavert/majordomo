@@ -33,7 +33,6 @@ type Config struct {
 	CodeSnippetsDir   string `yaml:"code_snippets"`
 	Model             string `yaml:"model"`
 
-	// TODO: Projects should be stored in a database.
 	ActiveProject string    `yaml:"active_project"`
 	Projects      []Project `yaml:"projects"`
 }

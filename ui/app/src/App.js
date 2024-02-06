@@ -11,7 +11,7 @@ import TopSelector from './Components/TopSelector';
 import PromptBox from './Components/PromptBox'; // Imported PromptBox component
 
 import { Logger } from "./Services/logger";
-import {fetchProjects, fetchScenarios} from './Services/api'; // Import fetchScenarios function
+import {fetchProjects, fetchScenarios, fetchSessionsForProjects} from './Services/api'; // Import fetchScenarios function
 
 // FIXME: this should not be used, but the UI served directly from the host.
 const MajordomoServerUrl = 'http://localhost:5005';
@@ -29,6 +29,8 @@ function App() {
 
     // Scenarios to choose from
     const [Scenarios, setScenarios] = useState([]);  // New state to store fetched Scenarios
+    const [Projects, setProjects] = useState([]);  // New state to store fetched Scenarios
+    const [Sessions, setSessions] = useState([]);  // New state to store fetched Scenarios
 
     // TopSelector state declarations
     const [selectedScenario, setSelectedScenario] = useState(null);
@@ -37,14 +39,23 @@ function App() {
 
     // Fetching scenarios on initial mount
     useEffect(() => {
-        fetchScenarios(setScenarios, setSelectedScenario, setError);
-        fetchProjects(setActiveProject, setError);
-
-    }, []);
+        fetchScenarios(setScenarios, setError);
+        fetchProjects(setActiveProject, setProjects, setError);
+        fetchSessionsForProjects(activeProject, setSessions, setError);
+        // TODO: the scenario should be retrieved from the session
+        setSelectedScenario('web_developer')
+    }, [activeProject]);
+    Logger.debug(`Projects: ${Projects}, Active: ${activeProject}, Sessions: ${Sessions}`)
 
     const handleScenarioChange = (scenario) => {
         setSelectedScenario(scenario);
     };
+
+    const handleProjectChange = (project) => {
+        setActiveProject(project);
+        // TODO: Fetch conversations for the selected project
+        console.log('Fetching conversations for project:', project, Sessions)
+    }
 
     const handleConversationChange = (conversation) => {
         setSelectedConversation(conversation);
@@ -62,7 +73,7 @@ function App() {
             });
             if (response.ok) {
                 const data = await response.json();
-                console.log('Received:', data.message.length, 'characters');
+                Logger.debug('Received:', data.message.length, 'characters');
                 setTextareaValue(data.message);
             } else {
                 const errorData = await response.json(); // Parse the error response as JSON
@@ -78,7 +89,7 @@ function App() {
     }
 
     const handleFormSubmit = async (content) => {
-        console.log('Sending Query to Majordomo (' + content.length + ' chars)')
+        Logger.debug('Sending Query to Majordomo (' + content.length + ' chars)')
         setLoading(true);
         setError(null);
         setResponseValue('Bot says...')
@@ -117,8 +128,10 @@ function App() {
             <Header/>
             <TopSelector
                 scenarios={Scenarios}
+                projects={Projects}
                 activeProject={activeProject}
-                onScenarioChange={handleScenarioChange}
+                sessions={Sessions}
+                onProjectChange={handleProjectChange}
                 onConversationChange={handleConversationChange}
                 handleAudioRecording={handleAudioRecording}
                 handleAudioRecordingError={handleAudioRecordingError}
@@ -146,7 +159,6 @@ function Header() {
 }
 
 function ResponseBox({responseValue}) {
-    Logger.debug('ResponseBox responseValue:', responseValue);
     return (
         <div className="container-fluid">
             <div className="jumbotron">

@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"github.com/alertavert/gpt4-go/pkg/completions"
 	"github.com/alertavert/gpt4-go/pkg/config"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
@@ -53,7 +54,7 @@ func updateProjectIfNotEmpty(original *config.Project, updates config.Project) {
 
 // Helper function to check if project name is valid
 func isProjectNameValid(name string) bool {
-	return len(name) > 0 && !strings.ContainsAny(name, " /?%#")
+	return len(name) > 0 && !strings.ContainsAny(name, " /?%#*<>|\\")
 }
 
 // Helper function to check if project name already exists
@@ -64,6 +65,27 @@ func isProjectNameExists(name string, projects []config.Project) bool {
 		}
 	}
 	return false
+}
+
+func updateActiveProject(assistant *completions.Majordomo) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var newActiveProject struct {
+			ActiveProject string `json:"active_project"`
+		}
+		if err := c.BindJSON(&newActiveProject); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+		if !isProjectNameValid(newActiveProject.ActiveProject) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid project name"})
+			return
+		}
+		if err := assistant.SetActiveProject(newActiveProject.ActiveProject); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"message": "Active project updated"})
+	}
 }
 
 // projectPutHandler handles the PUT request for the '/projects/:project_name' endpoint.
@@ -167,5 +189,13 @@ func projectDeleteHandler(cfg *config.Config) gin.HandlerFunc {
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "Project deleted"})
+	}
+}
+
+func getSessionsForProjectHandler(m *completions.Majordomo) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		projectName := c.Param("project_name")
+		sessions := m.GetSessionsForProject(projectName)
+		c.JSON(http.StatusOK, sessions)
 	}
 }

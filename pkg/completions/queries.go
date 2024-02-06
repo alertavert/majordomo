@@ -88,9 +88,29 @@ func (m *Majordomo) NewSessionIfNotExists(sessionID string) *Session {
 	if found {
 		return sess
 	}
-	sess = NewSession(sessionID)
+	sess = NewSession(sessionID, m.Config.ActiveProject)
 	m.Sessions[sessionID] = sess
 	return sess
+}
+
+func (m *Majordomo) SetActiveProject(projectName string) error {
+	p := m.Config.GetProject(projectName)
+	if p == nil {
+		return fmt.Errorf("project %s not found", projectName)
+	}
+	m.Config.ActiveProject = projectName
+	m.CodeStore = preprocessors.NewFilesystemStore(p.Location, m.Config.CodeSnippetsDir)
+	return nil
+}
+
+func (m *Majordomo) GetSessionsForProject(projectName string) []*Session {
+	var sessions []*Session
+	for _, sess := range m.Sessions {
+		if sess.Project == projectName {
+			sessions = append(sessions, sess)
+		}
+	}
+	return sessions
 }
 
 func (m *Majordomo) BuildMessages(prompt *PromptRequest) ([]openai.ChatCompletionMessage, error) {
