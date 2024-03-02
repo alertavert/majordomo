@@ -1,0 +1,25 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    crashoverride.com/artifact: "binary"
+    crashoverride.com/component: "majordomo"
+
+  name: majordomo
+  title: 'AI Coding Assistant'
+  description: |
+    [Majordomo](http://github.com/alertavert/majordomo)
+    is an LLM-based coding assistant that enables the user to build
+    applications using the power of AI in code generation.
+  links:
+    - url: https://github.com/alertavert/majordomo
+      title: GitHub Repo
+      icon: github
+    - url: https://codetrips.com/2023/11/19/using-openai-gpt-to-build-a-coding-assistant-that-uses-openai-gpt-to-build-apps-including-itself/
+      title: Blog
+      icon: pencil
+spec:
+  type: application
+  lifecycle: experimental
+  owner: user:marco
+  team: Backend
