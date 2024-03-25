@@ -1,6 +1,6 @@
 import {Logger} from "./logger";
 
-const MajordomoServerUrl = 'http://localhost:5005';
+const MajordomoServerUrl = 'http://localhost:9090';
 const ScenariosApiUrl = MajordomoServerUrl + '/scenarios';
 const ProjectsApiUrl = MajordomoServerUrl + '/projects';
 const SessionsApiUrl = (project) => { return `${ProjectsApiUrl}/${project}/sessions`;}
@@ -54,7 +54,7 @@ export const fetchProjects = (setActiveProject, setProjects, setError) => {
  * @typedef {Object} Session
  * @property {string} SessionID - The user ID.
  * @property {string} Scenario - The Scenario for the conversation (cannot be changed).
- * @property {string} Proejct - The Project for the conversation (cannot be changed).
+ * @property {string} Project - The Project for the conversation (cannot be changed).
  * @property {string} DisplayName - A user-friendly name for the conversation. (not used)
  * @property {string} Description - A user-friendly short description for the conversation. (not used)
  */
@@ -62,7 +62,9 @@ export const fetchSessionsForProjects = (project, setSessions, setError) => {
     if (project === '') {
         return;
     }
-    fetch(SessionsApiUrl(project))
+    let url = SessionsApiUrl(project);
+    Logger.debug(`Fetching Sessions for ${project} from ${url}`);
+    fetch(url)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`Failed to retrieve sessions: ${response.statusText}`);
@@ -70,9 +72,23 @@ export const fetchSessionsForProjects = (project, setSessions, setError) => {
             return response.json();
         })
         .then((data) => {
-            console.log(data);
-            if (data === undefined || data.length === 0) {
-                throw new Error(`No sessions found for ${project}`);
+            if (!data || data?.length === 0) {
+                data = [
+                    {
+                        SessionID: 12345,
+                        DisplayName: "Build UI",
+                        Scenario: "web_developer",
+                        Project: project,
+                        Description: "Build a UI for a web application",
+                    },
+                    {
+                        SessionID: 6987,
+                        DisplayName: "Manage Projects",
+                        Scenario: "project_manager",
+                        Project: project,
+                        Description: "Manage projects for a web application",
+                    },
+                ];
             }
             Logger.debug(`Fetch Sessions(${project}): ${data.map(session => session.SessionID)}`);
             setSessions(data);

@@ -14,7 +14,7 @@ import { Logger } from "./Services/logger";
 import {fetchProjects, fetchScenarios, fetchSessionsForProjects} from './Services/api'; // Import fetchScenarios function
 
 // FIXME: this should not be used, but the UI served directly from the host.
-const MajordomoServerUrl = 'http://localhost:5005';
+const MajordomoServerUrl = 'http://localhost:9090';
 const SpeechApiUrl = MajordomoServerUrl + '/command';
 const PromptApiUrl = MajordomoServerUrl + '/prompt';
 
@@ -127,7 +127,6 @@ function App() {
             <Logo/>
             <Header/>
             <TopSelector
-                scenarios={Scenarios}
                 projects={Projects}
                 activeProject={activeProject}
                 sessions={Sessions}

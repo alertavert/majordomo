@@ -22,7 +22,6 @@ import {Logger} from "../Services/logger";
  * @param {string[]} projects - the currently available projects. (we currently do not support creating new projects)
  * @param {string} activeProject - the currently active project.
  * @param {Session[]} sessions - the currently available conversations for the active project.
- * @param {string[]} scenarios - the currently available scenarios.
  * @param onProjectChange - the function to call when the user changes the active project.
  * @param onConversationChange - the function to call when the user changes the active conversation.
  * @param handleAudioRecording - the function to call when the user starts recording audio.
@@ -33,7 +32,6 @@ const TopSelector = ({
                          projects,
                          activeProject,
                          sessions,
-                         scenarios,
                          onProjectChange,
                          onConversationChange,
                          handleAudioRecording,
@@ -41,7 +39,10 @@ const TopSelector = ({
                      }) => {
     // These will be filled dynamically as the conversation progress.
     // TODO: should use session.DisplayName
-    const [conversations, setConversations] = useState(sessions.map((s) => {return s.SessionID}));
+    const [conversations, setConversations] = useState(sessions.map((s) => {
+        return s.DisplayName
+    }));
+    const [assistant, setAssistant] = useState(sessions[0].Scenario);
     const [selectedConversation, setSelectedConversation] = useState(0);
     const [selectedProject, setSelectedProject] = useState(0);
 
@@ -50,16 +51,19 @@ const TopSelector = ({
     const [isBlocked, setIsBlocked] = useState(false);
 
     const inputRef = useRef(null);
-    Logger.debug(`TopSelector: ${activeProject} from [${projects}] 
-                  has [${sessions.map((s) => {return s.SessionID})}]. 
-                  Scenarios: ${scenarios}`);
+    Logger.debug(`Active Project: ${activeProject} from [${projects}] with
+                  threads: [${sessions.map((s) => {
+                      return s.DisplayName + ':' + s.Scenario;
+                  })}]`);
 
     useEffect(() => {
-        Logger.debug("useEffect");
         if (isAdding) {
             inputRef.current.focus();
         }
-        setConversations(sessions.map((s) => {return s.SessionID}));
+        setConversations(sessions.map((s) => {return s.DisplayName}));
+        setSelectedConversation(0);
+        setAssistant(sessions[0].Scenario);
+
         navigator.mediaDevices.getUserMedia({audio: true})
             .then(function (stream) {
                 setIsBlocked(false);
@@ -74,14 +78,10 @@ const TopSelector = ({
         onProjectChange(projects[event.target.value]);
     };
 
-    const handleScenarioChange = (event) => {
-        let selectedScenario = scenarios[event.target.value - 1];
-        // onScenarioChange(selectedScenario);
-    };
-
-
     const handleConversationChange = (event) => {
+        const conversation = sessions[event.target.value];
         setSelectedConversation(event.target.value);
+        setAssistant(conversation.Scenario);
     }
 
     const handleNewConversationChange = (event) => {
@@ -147,13 +147,8 @@ const TopSelector = ({
                         <FontAwesomeIcon icon={faTrash}/></button>}
             </div>
             <div className="col-md-3">
-                <span className="bold-label">Scenarios:&nbsp;</span>
-                <select className='form-control' onChange={handleScenarioChange}
-                        disabled={!isAdding}>
-                    {scenarios.map((option, index) => (
-                        <option key={index} value={index + 1}>{option}</option>
-                    ))}
-                </select>
+                <span className="bold-label">Assistant:&nbsp;</span>
+                <textarea className="form-control" rows="1" readOnly={true} value={assistant}/>
             </div>
             <div className="col-md-1">
                 {isBlocked ? <span>Microphone access denied.</span> :
