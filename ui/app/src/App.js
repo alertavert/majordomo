@@ -60,7 +60,7 @@ function App() {
         await sendAudioBlob(blob, setTextareaValue, setError);
     }
 
-    const handleFormSubmit = async (content) => {
+    const askMajordomo = async (content) => {
         Logger.debug('Sending Query to Majordomo (' + content.length + ' chars)')
         setLoading(true);
         setError(null);
@@ -90,7 +90,7 @@ function App() {
                 onError={setError}
             />
             <PromptBox
-                onSubmit={handleFormSubmit}
+                onSubmit={askMajordomo}
                 textareaValue={refTextAreaValue.current}
                 setTextareaValue={setTextareaValue}/>
             <span className="d-block p-2"/>
