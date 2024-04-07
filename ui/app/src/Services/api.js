@@ -1,9 +1,12 @@
 import {Logger} from "./logger";
 
-const MajordomoServerUrl = 'http://localhost:9090';
+const MajordomoServerUrl = 'http://localhost:5005';
 const ScenariosApiUrl = MajordomoServerUrl + '/scenarios';
 const ProjectsApiUrl = MajordomoServerUrl + '/projects';
 const SessionsApiUrl = (project) => { return `${ProjectsApiUrl}/${project}/sessions`;}
+const SpeechApiUrl = MajordomoServerUrl + '/command';
+const PromptApiUrl = MajordomoServerUrl + '/prompt';
+
 
 /**
  * Fetches scenarios from the backend and updates the component state accordingly.
@@ -11,6 +14,7 @@ const SessionsApiUrl = (project) => { return `${ProjectsApiUrl}/${project}/sessi
  * @param {Function} setError Function to update the error state.
  */
 export const fetchScenarios = (setScenarios, setError) => {
+    Logger.debug('Fetching Scenarios from:', ScenariosApiUrl);
     fetch(ScenariosApiUrl)
         .then(response => {
             if (!response.ok) {
@@ -95,3 +99,31 @@ export const fetchSessionsForProjects = (project, setSessions, setError) => {
         })
         .catch(error => setError(`Could not GET sessions for ${project}: ${error.message}`));
 };
+
+/**
+ * Sends an audio blob to the backend for processing.
+ * @param {Blob} blob The audio blob to send.
+ * @param {Function} setTextareaValue Function to update the text area value.
+ * @param {Function} setError Function to update the error state.
+ */
+export const sendAudioBlob = async (blob, setTextareaValue, setError) => {
+    Logger.debug('Sending Audio Blob to:', SpeechApiUrl);
+    let formData = new FormData();
+    formData.append('audio', blob, 'audio.mp3');
+    try {
+        const response = await fetch(SpeechApiUrl, {
+            method: 'POST',
+            body: formData,
+        });
+        if (response.ok) {
+            const data = await response.json();
+            Logger.debug('Received:', data.message.length, 'characters');
+            setTextareaValue(data.message);
+        } else {
+            const errorData = await response.json(); // Parse the error response as JSON
+            setError('Error (' + response.status + '): ' + errorData.message);
+        }
+    } catch (error) {
+        setError('Cannot convert Audio: ' + error);
+    }
+}

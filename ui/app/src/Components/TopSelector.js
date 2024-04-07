@@ -6,6 +6,7 @@ import {faPen, faTrash} from '@fortawesome/free-solid-svg-icons';
 import '../styles/TopSelector.css';
 import AudioRecorder from "./AudioRecorder";
 import {Logger} from "../Services/logger";
+import {sendAudioBlob} from "../Services/api";
 
 
 /**
@@ -24,8 +25,8 @@ import {Logger} from "../Services/logger";
  * @param {Session[]} sessions - the currently available conversations for the active project.
  * @param onProjectChange - the function to call when the user changes the active project.
  * @param onConversationChange - the function to call when the user changes the active conversation.
- * @param handleAudioRecording - the function to call when the user starts recording audio.
- * @param handleAudioRecordingError - the function to call when the user stops recording audio.
+ * @param onAudioRecording - the function to call when the user starts a voice command.
+ * @param onError - the function to call when an error occurs.
  * @returns {Element}
  */
 const TopSelector = ({
@@ -34,15 +35,15 @@ const TopSelector = ({
                          sessions,
                          onProjectChange,
                          onConversationChange,
-                         handleAudioRecording,
-                         handleAudioRecordingError
+                         onAudioRecording,
+                         onError
                      }) => {
     // These will be filled dynamically as the conversation progress.
     // TODO: should use session.DisplayName
     const [conversations, setConversations] = useState(sessions.map((s) => {
         return s.DisplayName
     }));
-    const [assistant, setAssistant] = useState(sessions[0].Scenario);
+    const [assistant, setAssistant] = useState("");
     const [selectedConversation, setSelectedConversation] = useState(0);
     const [selectedProject, setSelectedProject] = useState(0);
 
@@ -62,7 +63,9 @@ const TopSelector = ({
         }
         setConversations(sessions.map((s) => {return s.DisplayName}));
         setSelectedConversation(0);
-        setAssistant(sessions[0].Scenario);
+        if (sessions.length > 0) {
+            setAssistant(sessions[0].Scenario);
+        }
 
         navigator.mediaDevices.getUserMedia({audio: true})
             .then(function (stream) {
@@ -153,8 +156,8 @@ const TopSelector = ({
             <div className="col-md-1">
                 {isBlocked ? <span>Microphone access denied.</span> :
                     <AudioRecorder
-                        handleAudioRecording={handleAudioRecording}
-                        handleAudioRecordingError={handleAudioRecordingError}/>
+                        handleAudioRecording={onAudioRecording}
+                        handleAudioRecordingError={onError}/>
                 }
             </div>
         </div>

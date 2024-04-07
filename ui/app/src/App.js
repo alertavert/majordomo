@@ -11,12 +11,12 @@ import TopSelector from './Components/TopSelector';
 import PromptBox from './Components/PromptBox'; // Imported PromptBox component
 
 import { Logger } from "./Services/logger";
-import {fetchProjects, fetchScenarios, fetchSessionsForProjects} from './Services/api'; // Import fetchScenarios function
-
-// FIXME: this should not be used, but the UI served directly from the host.
-const MajordomoServerUrl = 'http://localhost:9090';
-const SpeechApiUrl = MajordomoServerUrl + '/command';
-const PromptApiUrl = MajordomoServerUrl + '/prompt';
+import {
+    fetchProjects,
+    fetchScenarios,
+    fetchSessionsForProjects,
+    sendAudioBlob,
+} from './Services/api'; // Import fetchScenarios function
 
 
 function App() {
@@ -62,30 +62,8 @@ function App() {
     };
 
     const handleAudioRecording = async (blob) => {
-        setError(null);
-        // Send the blob to the server here or in separate function
-        try {
-            let formData = new FormData();
-            formData.append('audio', blob, 'audio.mp3');
-            const response = await fetch(SpeechApiUrl, {
-                method: 'POST',
-                body: formData,
-            });
-            if (response.ok) {
-                const data = await response.json();
-                Logger.debug('Received:', data.message.length, 'characters');
-                setTextareaValue(data.message);
-            } else {
-                const errorData = await response.json(); // Parse the error response as JSON
-                setError('Error (' + response.status + '): ' + errorData.message);
-            }
-        } catch (error) {
-            setError('Cannot convert Audio: ' + error);
-        }
-    };
-
-    const handleAudioRecordingError = (error) => {
-        setError('Audio Recording Error: ' + error);
+        Logger.debug('Sending Audio Blob to Majordomo')
+        await sendAudioBlob(blob, setTextareaValue, setError);
     }
 
     const handleFormSubmit = async (content) => {
@@ -132,8 +110,8 @@ function App() {
                 sessions={Sessions}
                 onProjectChange={handleProjectChange}
                 onConversationChange={handleConversationChange}
-                handleAudioRecording={handleAudioRecording}
-                handleAudioRecordingError={handleAudioRecordingError}
+                onAudioRecording={handleAudioRecording}
+                onError={setError}
             />
             <PromptBox
                 onSubmit={handleFormSubmit}
