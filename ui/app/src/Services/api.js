@@ -77,6 +77,7 @@ export const fetchSessionsForProjects = (project, setSessions, setError) => {
         })
         .then((data) => {
             if (!data || data?.length === 0) {
+                Logger.warn(`No sessions found for ${project}, creating dummy data`)
                 data = [
                     {
                         SessionID: 12345,
@@ -93,12 +94,48 @@ export const fetchSessionsForProjects = (project, setSessions, setError) => {
                         Description: "Manage projects for a web application",
                     },
                 ];
+            } else {
+                Logger.debug(`Fetch Sessions(${project}): ${data.map(session => session.SessionID)}`);
             }
-            Logger.debug(`Fetch Sessions(${project}): ${data.map(session => session.SessionID)}`);
             setSessions(data);
         })
         .catch(error => setError(`Could not GET sessions for ${project}: ${error.message}`));
 };
+
+/**
+ * Sends a text prompt to the backend for processing.
+ *
+ * @param {string} content The text prompt to send.
+ * @param {string} assistant The AI assistant to use for generating the response.
+ * @param {string} thread The conversation to append the current User prompt to.
+ *
+ * @returns {Promise<string>} The response from the backend.
+ */
+export const sendPrompt = async (content, assistant, thread) => {
+    Logger.debug('Sending Query to Majordomo (' + content.length + ' chars)');
+    try {
+        const response = await fetch(PromptApiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                prompt: content,
+                scenario: assistant,
+                session: thread,
+            }),
+        });
+        const data = await response.json();
+        Logger.debug(`Outcome from POSTing Prompt: ${data?.response}`);
+        if (!response.ok || data?.response === 'error') {
+            throw new Error(`${data.message ? data.message : response.statusText}`);
+        }
+        return data.message;
+    } catch (error) {
+        Logger.error(`Could not POST Prompt to Majordomo: ${JSON.stringify(error)}`);
+        throw new Error(`The Bot wasn't quite there yet: ${error.message}`);
+    }
+}
 
 /**
  * Sends an audio blob to the backend for processing.

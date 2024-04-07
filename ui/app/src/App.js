@@ -13,9 +13,9 @@ import PromptBox from './Components/PromptBox'; // Imported PromptBox component
 import { Logger } from "./Services/logger";
 import {
     fetchProjects,
-    fetchScenarios,
     fetchSessionsForProjects,
     sendAudioBlob,
+    sendPrompt,
 } from './Services/api'; // Import fetchScenarios function
 
 
@@ -28,7 +28,6 @@ function App() {
     refTextAreaValue.current = textareaValue;
 
     // Scenarios to choose from
-    const [Scenarios, setScenarios] = useState([]);  // New state to store fetched Scenarios
     const [Projects, setProjects] = useState([]);  // New state to store fetched Scenarios
     const [Sessions, setSessions] = useState([]);  // New state to store fetched Scenarios
 
@@ -39,17 +38,12 @@ function App() {
 
     // Fetching scenarios on initial mount
     useEffect(() => {
-        fetchScenarios(setScenarios, setError);
         fetchProjects(setActiveProject, setProjects, setError);
         fetchSessionsForProjects(activeProject, setSessions, setError);
         // TODO: the scenario should be retrieved from the session
         setSelectedScenario('web_developer')
     }, [activeProject]);
     Logger.debug(`Projects: ${Projects}, Active: ${activeProject}, Sessions: ${Sessions}`)
-
-    const handleScenarioChange = (scenario) => {
-        setSelectedScenario(scenario);
-    };
 
     const handleProjectChange = (project) => {
         setActiveProject(project);
@@ -70,33 +64,15 @@ function App() {
         Logger.debug('Sending Query to Majordomo (' + content.length + ' chars)')
         setLoading(true);
         setError(null);
-        setResponseValue('Bot says...')
+        setResponseValue('')
         try {
-            const response = await fetch(PromptApiUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    prompt: content,
-                    scenario: selectedScenario,
-                    session: selectedConversation,
-                }),
-            });
-            setLoading(false);
-            const data = await response.json();
-            if (response.ok) {
-                console.log('Received:', data.message.length, 'characters');
-                setResponseValue(data.message);
-            } else {
-                let errMsg = 'Error (' + response.status + '): ' + response.statusText;
-                if (data.message) {
-                    errMsg = errMsg + ' - ' + data.message;
-                }
-                setError('Error: ' + errMsg);
-            }
+            const response = await sendPrompt(content, selectedScenario, selectedConversation);
+            Logger.debug(`Bot response is ${response.length} characters`);
+            setResponseValue(response);
         } catch (error) {
             setError("The Bot wasn't quite there yet: " + error.message);
+        } finally {
+            setLoading(false);
         }
     };
 
