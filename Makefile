@@ -3,7 +3,10 @@
 
 
 GOOS ?= $(shell uname -s | tr "[:upper:]" "[:lower:]")
-GOARCH ?= amd64
+GOARCH ?= $(shell uname -m)
+ifeq ($(GOARCH),x86_64)
+	GOARCH=amd64
+endif
 GOMOD := $(shell go list -m)
 
 # Versioning
@@ -55,9 +58,11 @@ fmt: ## Formats the Go source code using 'go fmt'
 ##@ Development
 $(bin): cmd/main.go $(srcs)
 	@mkdir -p $(shell dirname $(bin))
-	GOOS=$(GOOS) GOARCH=$(GOARCH) go build \
+	@echo "Building rel. $(release); OS/Arch: $(GOOS)/$(GOARCH) - Pkg: $(GOMOD)"
+	@GOOS=$(GOOS) GOARCH=$(GOARCH) go build \
 		-ldflags "-X main.Release=$(release)" \
 		-o $(bin) cmd/main.go
+	@echo "Majordomo Server $(shell basename $(bin)) built"
 
 .PHONY: build
 build: $(bin) ## Builds the server binary and the React UI
@@ -82,9 +87,10 @@ coverage: build/reports/coverage.out ## Shows the coverage report in the browser
 .PHONY: all
 all: build test ## Builds the binary and runs all tests
 
+PORT ?= 5005
 .PHONY: run
 run: $(bin) ## Runs the server binary
-	$(bin) -debug -port 5005
+	$(bin) -debug -port $(PORT)
 
 ##@ Container Management
 # Convenience targets to run locally containers and

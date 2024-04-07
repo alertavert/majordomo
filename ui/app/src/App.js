@@ -8,17 +8,15 @@ import ResizableTextArea from './Components/ResizableTextArea';
 import Spinner from './Components/Spinner';
 import ErrorBox from "./Components/ErrorBox";
 import TopSelector from './Components/TopSelector';
+import PromptBox from './Components/PromptBox'; // Imported PromptBox component
 
-// MicRecorder for Audio Recording
-import MicRecorder from 'mic-recorder-to-mp3';
-import AudioRecorder from './Components/AudioRecorder';
-
-
-// FIXME: this should not be used, but the UI served directly from the host.
-const MajordomoServerUrl = 'http://localhost:5005';
-const SpeechApiUrl = MajordomoServerUrl + '/command';
-const PromptApiUrl = MajordomoServerUrl + '/prompt';
-const ScenariosApiUrl = MajordomoServerUrl + '/scenarios';
+import { Logger } from "./Services/logger";
+import {
+    fetchProjects,
+    fetchSessionsForProjects,
+    sendAudioBlob,
+    sendPrompt,
+} from './Services/api'; // Import fetchScenarios function
 
 
 function App() {
@@ -30,98 +28,51 @@ function App() {
     refTextAreaValue.current = textareaValue;
 
     // Scenarios to choose from
-    const [Scenarios, setScenarios] = useState([]);  // New state to store fetched Scenarios
+    const [Projects, setProjects] = useState([]);  // New state to store fetched Scenarios
+    const [Sessions, setSessions] = useState([]);  // New state to store fetched Scenarios
 
     // TopSelector state declarations
     const [selectedScenario, setSelectedScenario] = useState(null);
     const [selectedConversation, setSelectedConversation] = useState('Ask Majordomo');
+    const [activeProject, setActiveProject] = useState('');
 
     // Fetching scenarios on initial mount
     useEffect(() => {
-        // TODO: move to a separate function
-        fetch(ScenariosApiUrl)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Failed to retrieve scenarios: ${response.statusText}`);
-                }
-                return response.json();
-            })
-            .then((data) => {
-                if (data.scenarios.length === 0) {
-                    throw new Error('No scenarios found');
-                }
-                setScenarios(data.scenarios);
-                setSelectedScenario(data.scenarios[0]);
-            })
-            .catch(error => setError(`Could not retrieve Scenarios: ${error.message}`));
-    }, []);
+        fetchProjects(setActiveProject, setProjects, setError);
+        fetchSessionsForProjects(activeProject, setSessions, setError);
+        // TODO: the scenario should be retrieved from the session
+        setSelectedScenario('web_developer')
+    }, [activeProject]);
+    Logger.debug(`Projects: ${Projects}, Active: ${activeProject}, Sessions: ${Sessions}`)
 
-    const handleScenarioChange = (scenario) => {
-        setSelectedScenario(scenario);
-    };
+    const handleProjectChange = (project) => {
+        setActiveProject(project);
+        // TODO: Fetch conversations for the selected project
+        console.log('Fetching conversations for project:', project, Sessions)
+    }
 
     const handleConversationChange = (conversation) => {
         setSelectedConversation(conversation);
     };
 
     const handleAudioRecording = async (blob) => {
-        setError(null);
-        // Send the blob to the server here or in separate function
-        try {
-            let formData = new FormData();
-            formData.append('audio', blob, 'audio.mp3');
-            const response = await fetch(SpeechApiUrl, {
-                method: 'POST',
-                body: formData,
-            });
-            if (response.ok) {
-                const data = await response.json();
-                console.log('Received:', data.message.length, 'characters');
-                setTextareaValue(data.message);
-            } else {
-                const errorData = await response.json(); // Parse the error response as JSON
-                setError('Error (' + response.status + '): ' + errorData.message);
-            }
-        } catch (error) {
-            setError('Cannot convert Audio: ' + error);
-        }
-    };
-
-    const handleAudioRecordingError = (error) => {
-        setError('Audio Recording Error: ' + error);
+        Logger.debug('Sending Audio Blob to Majordomo')
+        await sendAudioBlob(blob, setTextareaValue, setError);
     }
 
     const handleFormSubmit = async (content) => {
-        console.log('Sending Query to Majordomo (' + content.length + ' chars)')
+        Logger.debug('Sending Query to Majordomo (' + content.length + ' chars)')
         setLoading(true);
         setError(null);
-        setResponseValue('Bot says...')
+        setResponseValue('')
         try {
-            const response = await fetch(PromptApiUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    prompt: content,
-                    scenario: selectedScenario,
-                    session: selectedConversation,
-                }),
-            });
-            setLoading(false);
-            const data = await response.json();
-            if (response.ok) {
-                console.log('Received:', data.message.length, 'characters');
-                setResponseValue(data.message);
-            } else {
-                let errMsg = 'Error (' + response.status + '): ' + response.statusText;
-                if (data.message) {
-                    errMsg = errMsg + ' - ' + data.message;
-                }
-                setError('Error: ' + errMsg);
-            }
+            const response = await sendPrompt(content, selectedScenario, selectedConversation);
+            Logger.debug(`Bot response is ${response.length} characters`);
+            setResponseValue(response);
         } catch (error) {
             setError("The Bot wasn't quite there yet: " + error.message);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -130,11 +81,13 @@ function App() {
             <Logo/>
             <Header/>
             <TopSelector
-                scenarios={Scenarios}
-                onScenarioChange={handleScenarioChange}
+                projects={Projects}
+                activeProject={activeProject}
+                sessions={Sessions}
+                onProjectChange={handleProjectChange}
                 onConversationChange={handleConversationChange}
-                handleAudioRecording={handleAudioRecording}
-                handleAudioRecordingError={handleAudioRecordingError}
+                onAudioRecording={handleAudioRecording}
+                onError={setError}
             />
             <PromptBox
                 onSubmit={handleFormSubmit}
@@ -158,38 +111,7 @@ function Header() {
     );
 }
 
-function PromptBox({onSubmit, textareaValue, setTextareaValue}) {
-    // const [textareaValue, setTextareaValue] = useState('');
-
-    const handleSubmit = async () => {
-        onSubmit(textareaValue);
-    };
-
-    const handleTextareaChange = (event) => {
-        setTextareaValue(event.target.value);
-    };
-
-    return (
-        <div className="container-fluid">
-            <div className="jumbotron">
-                <h6>Your request:</h6>
-                <textarea className="form-control prompt-box"
-                          style={{height: '200px'}}
-                          value={textareaValue}
-                          onChange={handleTextareaChange}
-                />
-                <div className="d-flex justify-content-end">
-                    <button className="btn btn-primary btn-sm ask-btn"
-                            onClick={handleSubmit}>Ask Majordomo
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-}
-
 function ResponseBox({responseValue}) {
-    console.log('ResponseBox responseValue:', responseValue);
     return (
         <div className="container-fluid">
             <div className="jumbotron">
@@ -204,7 +126,7 @@ function ResponseBox({responseValue}) {
 function Footer() {
     return (
         <div>
-            <p className="footer">&copy; 2023 AlertAvert. All rights reserved.</p>
+            <p className="footer">&copy; 2023-2024 AlertAvert. All rights reserved.</p>
         </div>
     )
 }

@@ -1,30 +1,72 @@
 import React, {useState, useRef, useEffect} from 'react';
 
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
-import {faPen, faTrash} from '@fortawesome/free-solid-svg-icons'
+import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
+import {faPen, faTrash} from '@fortawesome/free-solid-svg-icons';
 
 import '../styles/TopSelector.css';
 import AudioRecorder from "./AudioRecorder";
+import {Logger} from "../Services/logger";
+import {sendAudioBlob} from "../Services/api";
 
+
+/**
+ * TopSelector component.
+ *
+ * Tracks essentially the state of the application, by showing the currently active project,
+ * the available conversations (for the project) and the scenario associated with the currently
+ * selected conversation.
+ *
+ * The user can change the active project, and select to continue an existing conversation
+ * (in which case the scenario cannot be changed), or start a new one (in which case they will
+ * also be allowed to choose a Scenario for the new conversation).
+ *
+ * @param {string[]} projects - the currently available projects. (we currently do not support creating new projects)
+ * @param {string} activeProject - the currently active project.
+ * @param {Session[]} sessions - the currently available conversations for the active project.
+ * @param onProjectChange - the function to call when the user changes the active project.
+ * @param onConversationChange - the function to call when the user changes the active conversation.
+ * @param onAudioRecording - the function to call when the user starts a voice command.
+ * @param onError - the function to call when an error occurs.
+ * @returns {Element}
+ */
 const TopSelector = ({
-     scenarios, onScenarioChange, onConversationChange,
-     handleAudioRecording, handleAudioRecordingError
-}) => {
-
+                         projects,
+                         activeProject,
+                         sessions,
+                         onProjectChange,
+                         onConversationChange,
+                         onAudioRecording,
+                         onError
+                     }) => {
     // These will be filled dynamically as the conversation progress.
-    const [conversations, setConversations] = useState(['Ask Majordomo']);
-    const [selectedConversation, setSelectedConversation] = useState(1);
+    // TODO: should use session.DisplayName
+    const [conversations, setConversations] = useState(sessions.map((s) => {
+        return s.DisplayName
+    }));
+    const [assistant, setAssistant] = useState("");
+    const [selectedConversation, setSelectedConversation] = useState(0);
+    const [selectedProject, setSelectedProject] = useState(0);
+
     const [isAdding, setIsAdding] = useState(false);
     const [newConversation, setNewConversation] = useState('');
     const [isBlocked, setIsBlocked] = useState(false);
 
-
     const inputRef = useRef(null);
+    Logger.debug(`Active Project: ${activeProject} from [${projects}] with
+                  threads: [${sessions.map((s) => {
+                      return s.DisplayName + ':' + s.Scenario;
+                  })}]`);
 
     useEffect(() => {
         if (isAdding) {
             inputRef.current.focus();
         }
+        setConversations(sessions.map((s) => {return s.DisplayName}));
+        setSelectedConversation(0);
+        if (sessions.length > 0) {
+            setAssistant(sessions[0].Scenario);
+        }
+
         navigator.mediaDevices.getUserMedia({audio: true})
             .then(function (stream) {
                 setIsBlocked(false);
@@ -32,16 +74,17 @@ const TopSelector = ({
             .catch(function (err) {
                 setIsBlocked(true);
             });
-    }, [isAdding]);
+    }, [isAdding, sessions]);
 
-    const handleScenarioChange = (event) => {
-        let selectedScenario = scenarios[event.target.value - 1];
-        onScenarioChange(selectedScenario);
+    const handleProjectChange = (event) => {
+        setSelectedProject(event.target.value);
+        onProjectChange(projects[event.target.value]);
     };
 
     const handleConversationChange = (event) => {
+        const conversation = sessions[event.target.value];
         setSelectedConversation(event.target.value);
-        onConversationChange(conversations[event.target.value - 1]);
+        setAssistant(conversation.Scenario);
     }
 
     const handleNewConversationChange = (event) => {
@@ -53,14 +96,14 @@ const TopSelector = ({
     }
 
     const deleteConversation = () => {
-        setConversations(prevConversations => prevConversations.filter((conversation, index) => index + 1 !== selectedConversation));
+        //setConversations(prevConversations => prevConversations.filter((conversation, index) => index + 1 !== selectedConversation));
         setSelectedConversation(1); // Select the first conversation after deletion
     }
 
     const handleKeyDown = (event) => {
         if (event.key === 'Enter') {
-            setConversations(prevConversations => [...prevConversations, newConversation]);
-            setSelectedConversation(conversations.length + 1);
+            // setConversations(prevConversations => [...prevConversations, newConversation]);
+            // setSelectedConversation(conversations.length + 1);
             setIsAdding(false);
             setNewConversation('');
         } else if (event.key === 'Escape') {
@@ -72,10 +115,12 @@ const TopSelector = ({
     return (
         <div className="row top-selector">
             <div className="col-md-3">
-                <span className="bold-label">Scenario:&nbsp;</span>
-                <select className='form-control' onChange={handleScenarioChange}>
-                    {scenarios.map((option, index) => (
-                        <option value={index + 1}>{option}</option>
+                <span className="bold-label">Active Project:&nbsp;</span>
+                <select className='form-control'
+                        value={selectedProject}
+                        onChange={handleProjectChange}>
+                    {projects.map((project, index) => (
+                        <option key={index} value={index}>{project}</option>
                     ))}
                 </select>
             </div>
@@ -90,8 +135,8 @@ const TopSelector = ({
                     : <select className='form-control'
                               value={selectedConversation}
                               onChange={handleConversationChange}>
-                        {conversations.map((option, index) => (
-                            <option value={index + 1}>{option}</option>
+                        {conversations.map((session, index) => (
+                            <option key={index} value={index}>{session}</option>
                         ))}
                     </select>
                 }
@@ -104,15 +149,19 @@ const TopSelector = ({
                     <button className="btn btn-outline-dark btn-sm conversation-btn" onClick={deleteConversation}>
                         <FontAwesomeIcon icon={faTrash}/></button>}
             </div>
-            <div className="col-md-2">
+            <div className="col-md-3">
+                <span className="bold-label">Assistant:&nbsp;</span>
+                <textarea className="form-control" rows="1" readOnly={true} value={assistant}/>
+            </div>
+            <div className="col-md-1">
                 {isBlocked ? <span>Microphone access denied.</span> :
                     <AudioRecorder
-                        handleAudioRecording={handleAudioRecording}
-                        handleAudioRecordingError={handleAudioRecordingError}/>
+                        handleAudioRecording={onAudioRecording}
+                        handleAudioRecordingError={onError}/>
                 }
             </div>
         </div>
     )
-}
+};
 
 export default TopSelector;

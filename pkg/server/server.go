@@ -49,7 +49,9 @@ func (s *Server) setupHandlers() {
 	cfg := s.assistant.Config
 	r.GET("/projects", projectsGetHandler(cfg))
 	r.GET("/projects/:project_name", projectDetailsGetHandler(cfg))
+	r.GET("/projects/:project_name/sessions", getSessionsForProjectHandler(s.assistant))
 	r.POST("/projects", projectPostHandler(cfg))
+	r.PUT("/projects", updateActiveProject(s.assistant))
 	r.PUT("/projects/:project_name", projectPutHandler(cfg))
 	r.DELETE("/projects/:project_name", projectDeleteHandler(cfg))
 

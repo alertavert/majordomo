@@ -15,7 +15,7 @@ var _ = Describe("Session", func() {
 	)
 
 	BeforeEach(func() {
-		session = completions.NewSession("test-session-id")
+		session = completions.NewSession("test-session-id", "test-project-id")
 	})
 
 	Describe("Prompt and Response handling", func() {
@@ -80,7 +80,7 @@ var _ = Describe("Session", func() {
 			It("should initialize a new session with scenario", func() {
 				err := session.Init("mock-scenario-id")
 				Ω(err).NotTo(HaveOccurred())
-				Ω(session.ScenarioID).To(Equal("mock-scenario-id"))
+				Ω(session.Scenario).To(Equal("mock-scenario-id"))
 				Ω(session.IsEmpty()).To(BeTrue())
 				Ω(session.GetConversation()).Should(HaveLen(2))
 			})
@@ -101,11 +101,11 @@ var _ = Describe("Session", func() {
 
 	Describe("Error Conditions", func() {
 		It("should not be possible to create a session with an empty ID", func() {
-			newSession := completions.NewSession("")
+			newSession := completions.NewSession("", "test-project-id")
 			Expect(newSession).To(BeNil())
 		})
 		It("should handle creating a new session properly", func() {
-			newSession := completions.NewSession("new-session-id")
+			newSession := completions.NewSession("new-session-id", "test-project-id")
 			Expect(newSession).ToNot(BeNil())
 			Expect(newSession.SessionID).To(Equal("new-session-id"))
 		})
