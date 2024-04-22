@@ -1,6 +1,5 @@
-# Copyright (c) 2022 AlertAvert.com.  All rights reserved.
+# Copyright (c) AlertAvert.com.  All rights reserved.
 # Created by M. Massenzio, 2022-03-14
-
 
 GOOS ?= $(shell uname -s | tr "[:upper:]" "[:lower:]")
 GOARCH ?= $(shell uname -m)
@@ -66,8 +65,6 @@ $(bin): cmd/main.go $(srcs)
 
 .PHONY: build
 build: $(bin) ## Builds the server binary and the React UI
-	@cd ui/app && npm run build
-	@rm -rf build/ui && mv ui/app/build build/ui
 
 .PHONY: test
 test: $(srcs) $(test_srcs)  ## Runs all tests
@@ -88,8 +85,8 @@ coverage: build/reports/coverage.out ## Shows the coverage report in the browser
 all: build test ## Builds the binary and runs all tests
 
 PORT ?= 5005
-.PHONY: run
-run: $(bin) ## Runs the server binary
+.PHONY: dev
+dev: $(bin) ## Runs the server binary in development mode
 	$(bin) -debug -port $(PORT)
 
 ##@ Container Management
@@ -110,14 +107,6 @@ run-container: container ## Runs the container locally
 
 ##@ UI Development
 
-.PHONY: ui-setup
-ui-setup: ## Installs the UI dependencies
-	@cd ui/app && npm install
-
-.PHONY: ui-dev
-ui-dev: ## Runs the UI in development mode
-	@cd ui/app && npm start
-
 ##@ TLS Support
 #
 # This section is WIP and subject to change
@@ -131,8 +120,6 @@ server-csr := $(config_dir)/localhost-csr.json
 gencert: $(ca-csr) $(config) $(server-csr) ## Generates all certificates in the certs directory (requires cfssl, see https://github.com/cloudflare/cfssl#installation)
 	cfssl gencert \
 		-initca $(ca-csr) | cfssljson -bare ca
-
-
 	cfssl gencert \
 		-ca=ca.pem \
 		-ca-key=ca-key.pem \

@@ -27,5 +27,4 @@ jobs:
         node-version: '20'
 
     - run: go get github.com/onsi/ginkgo/ginkgo
-    - run: make ui-setup
     - run: go test ./pkg/...
