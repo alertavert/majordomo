@@ -55,6 +55,9 @@ func (s *Server) setupHandlers() {
 	r.PUT("/projects/:project_name", projectPutHandler(cfg))
 	r.DELETE("/projects/:project_name", projectDeleteHandler(cfg))
 
+	// Assistants management routes
+	r.GET("/assistants", assistantsGetHandler(s.assistant))
+
 	// Static routes
 	r.Static("/web", "build/ui")
 	r.Static("/static/css", "build/ui/static/css")
