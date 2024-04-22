@@ -41,8 +41,10 @@ func (s *Server) Run() error {
 func (s *Server) setupHandlers() {
 	r := s.router
 	r.POST("/command", audioHandler(s.assistant))
-	r.POST("/echo", echoHandler(s.assistant))
+	r.POST("/parse", echoPromptHandler(s.assistant))
 	r.POST("/prompt", promptHandler(s.assistant))
+
+	// FIXME: Deprecated - replaced by the /assistants endpoint
 	r.GET("/scenarios", scenariosHandler)
 
 	// Projects routes
@@ -57,12 +59,6 @@ func (s *Server) setupHandlers() {
 
 	// Assistants management routes
 	r.GET("/assistants", assistantsGetHandler(s.assistant))
-
-	// Static routes
-	r.Static("/web", "build/ui")
-	r.Static("/static/css", "build/ui/static/css")
-	r.Static("/static/js", "build/ui/static/js")
-	r.Static("/static/media", "build/ui/static/media")
 }
 
 // SetupTestRoutes is a helper function to set up the routes for testing.
