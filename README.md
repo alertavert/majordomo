@@ -1,7 +1,7 @@
 # Majordomo - Code generation Bot
 *Created by M. Massenzio &copy; 2023 AlertAvert.com All Rights Reserved*
 
-[![Go](https://github.com/alertavert/majordomo/actions/workflows/go.yml/badge.svg?branch=main)](https://github.com/alertavert/majordomo/actions/workflows/go.yml)
+[![Go](https://github.com/alertavert/majordomo/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/alertavert/majordomo/actions/workflows/test.yml)
 
 # Build & run Server
 
@@ -23,7 +23,7 @@ The server itself can be run in `dev` mode via `make run` and is reachable at `h
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
-This is what it currently looks like (Nov 2023):
+This is what it currently looks like (May 2024):
 
 ![Majordomo](./docs/images/majordomo.png)
 
