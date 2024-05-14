@@ -5,7 +5,7 @@
 # This script is used to generate a new release of the project.
 
 name: Majordomo
-version: v0.4.0
+version: 0.4.1
 description: An LLM-powered code-generation assistant for expert developers
 author: Marco Massenzio (marco@alertavert.com)
 license: Proprietary
