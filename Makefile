@@ -10,17 +10,16 @@ GOMOD := $(shell go list -m)
 
 # Versioning
 # The `version` is a static value, set in settings.yaml, and ONLY used to tag the release.
-tag := $(shell cat settings.yaml | yq -r .version)
+VERSION ?= $(shell cat settings.yaml | yq -r .version)
+GIT_COMMIT := $(shell git rev-parse --short HEAD)
+RELEASE := v$(VERSION)-g$(GIT_COMMIT)
 
-# The `release` is generated automatically from the most recent tag (version) and the
-# current commit hash, and is used to tag the Docker image.
-release := $(shell git describe --tags --always --dirty="-dev")
 prog := majordomo
-bin := build/bin/$(prog)-$(release)_$(GOOS)-$(GOARCH)
+bin := $(prog)-$(RELEASE)_$(GOOS)-$(GOARCH)
 
 image := alertavert/$(prog)
 compose := docker/compose.yaml
-dockerfile := docker/Dockerfile
+dockerfile := Dockerfile
 
 # Source files & Test files definitions
 #
@@ -49,22 +48,21 @@ clean: ## Cleans up the binary, container image and other data
 	@rm -rf certs
 
 version: ## Displays the current version tag (release)
-	@echo $(release)
+	@echo v$(VERSION)
 
 fmt: ## Formats the Go source code using 'go fmt'
 	@go fmt $(pkgs) ./cmd
 
 ##@ Development
-$(bin): cmd/main.go $(srcs)
-	@mkdir -p $(shell dirname $(bin))
-	@echo "Building rel. $(release); OS/Arch: $(GOOS)/$(GOARCH) - Pkg: $(GOMOD)"
+.PHONY: build
+build: cmd/main.go $(srcs)
+	@mkdir -p build/bin
+	@echo "Building rel. $(RELEASE); OS/Arch: $(GOOS)/$(GOARCH) - Pkg: $(GOMOD)"
 	@GOOS=$(GOOS) GOARCH=$(GOARCH) go build \
-		-ldflags "-X main.Release=$(release)" \
-		-o $(bin) cmd/main.go
+		-ldflags "-X main.Release=$(RELEASE)" \
+		-o build/bin/$(bin) cmd/main.go
 	@echo "Majordomo Server $(shell basename $(bin)) built"
 
-.PHONY: build
-build: $(bin) ## Builds the server binary and the React UI
 
 .PHONY: test
 test: $(srcs) $(test_srcs)  ## Runs all tests
@@ -94,18 +92,20 @@ dev: $(bin) ## Runs the server binary in development mode
 # setup the test environments.
 
 tag: ## Tags the current release
-	@echo "Tagging release $(tag)"
-	@git tag -a $(tag) -m "Release $(tag)"
-	@git push origin $(tag)
+	@echo "Tagging version v$(VERSION) at commit $(GIT_COMMIT)"
+	@git tag -a v$(VERSION) -m "Release $(RELEASE)"
+	@git push origin --tags
 
-container: ## Builds the container image
-	docker build -f $(dockerfile) -t $(image):$(release) .
+container: build/bin/$(bin) ## Builds the container image
+	docker build -f $(dockerfile) \
+		--build-arg="VERSION=$(VERSION)" \
+		-t $(image):$(RELEASE) .
 
 .PHONY: run-container
-run-container: container ## Runs the container locally
-	docker run --rm -it -p 8080:8080 $(image):$(release)
-
-##@ UI Development
+run-container:  ## Runs the container locally
+	docker run --rm -it -p 5000:5000 \
+		-v $${HOME}/.majordomo:/etc/majordomo \
+		$(image):$(RELEASE)
 
 ##@ TLS Support
 #
