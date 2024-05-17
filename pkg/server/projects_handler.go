@@ -195,7 +195,13 @@ func projectDeleteHandler(cfg *config.Config) gin.HandlerFunc {
 func getSessionsForProjectHandler(m *completions.Majordomo) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		projectName := c.Param("project_name")
-		sessions := m.GetSessionsForProject(projectName)
-		c.JSON(http.StatusOK, sessions)
+		for _, p := range m.Config.Projects {
+			if p.Name == projectName {
+				sessions := m.GetSessionsForProject(projectName)
+				c.JSON(http.StatusOK, sessions)
+				return
+			}
+		}
+		c.JSON(http.StatusNotFound, gin.H{"error": fmt.Sprintf("Project `%s` not found", projectName)})
 	}
 }

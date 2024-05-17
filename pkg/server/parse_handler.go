@@ -10,9 +10,9 @@ import (
 	"net/http"
 )
 
-// echoPromptHandler is a simple handler that echoes back the prompt it receives
+// parsePromptHandler is a simple handler that echoes back the prompt it receives
 // after parsing it and substituting any code snippets.
-func echoPromptHandler(m *completions.Majordomo) func(c *gin.Context) {
+func parsePromptHandler(m *completions.Majordomo) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		var requestBody completions.PromptRequest
 		err := c.ShouldBindJSON(&requestBody)

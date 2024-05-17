@@ -84,8 +84,8 @@ all: build test ## Builds the binary and runs all tests
 
 PORT ?= 5005
 .PHONY: dev
-dev: $(bin) ## Runs the server binary in development mode
-	$(bin) -debug -port $(PORT)
+dev: build ## Runs the server binary in development mode
+	build/bin/$(bin) -debug -port $(PORT)
 
 ##@ Container Management
 # Convenience targets to run locally containers and

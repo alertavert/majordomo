@@ -104,7 +104,7 @@ func (m *Majordomo) SetActiveProject(projectName string) error {
 }
 
 func (m *Majordomo) GetSessionsForProject(projectName string) []*Session {
-	var sessions []*Session
+	var sessions []*Session = make([]*Session, 0)
 	for _, sess := range m.Sessions {
 		if sess.Project == projectName {
 			sessions = append(sessions, sess)
