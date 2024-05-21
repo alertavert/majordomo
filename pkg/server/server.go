@@ -40,8 +40,14 @@ func (s *Server) Run() error {
 
 func (s *Server) setupHandlers() {
 	r := s.router
+	// Health check
+	r.GET("/health", func(context *gin.Context) {
+		context.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
+	// Prompt-related routes
 	r.POST("/command", audioHandler(s.assistant))
-	r.POST("/parse", echoPromptHandler(s.assistant))
+	r.POST("/parse", parsePromptHandler(s.assistant))
 	r.POST("/prompt", promptHandler(s.assistant))
 
 	// FIXME: Deprecated - replaced by the /assistants endpoint
