@@ -18,7 +18,7 @@ common: |
   
   Finally, please make sure to use the correct file extension for the code you are sending back.
 
-scenarios:
+instructions:
   go_developer: |
     All the code is GoLang (or shell scripts); and will help me to build a complete system. 
     

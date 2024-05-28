@@ -13,20 +13,12 @@ import (
 )
 
 var (
-	ErrEmptyPrompt   = fmt.Errorf("prompt cannot be empty")
-	ErrEmptyScenario = fmt.Errorf("scenario cannot be empty")
-	ErrNoSession     = fmt.Errorf("session cannot be empty")
+	ErrEmptyPrompt    = fmt.Errorf("prompt cannot be empty")
 )
 
 func ValidatePromptRequest(requestBody *completions.PromptRequest) error {
 	if requestBody.Prompt == "" {
 		return ErrEmptyPrompt
-	}
-	if requestBody.Scenario == "" {
-		return ErrEmptyScenario
-	}
-	if requestBody.Session == "" {
-		return ErrNoSession
 	}
 	return nil
 }
@@ -37,14 +29,14 @@ func promptHandler(m *completions.Majordomo) func(c *gin.Context) {
 		err := c.ShouldBindJSON(&requestBody)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"response": "error",
+				"status": "error",
 				"message":  err.Error(),
 			})
 			return
 		}
 		if err := ValidatePromptRequest(&requestBody); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"response": "error",
+				"status": "error",
 				"message":  err.Error(),
 			})
 			return
@@ -53,15 +45,16 @@ func promptHandler(m *completions.Majordomo) func(c *gin.Context) {
 		if err != nil {
 			log.Error().Err(err).Msg("Error querying bot")
 			c.JSON(http.StatusBadRequest, gin.H{
-				"response": "error",
+				"status": "error",
 				"message":  err.Error(),
 			})
 			return
 		}
 		log.Debug().Msg("returning response")
 		c.JSON(http.StatusOK, gin.H{
-			"response": "success",
+			"status": "success",
 			"message":  botResponse,
+			"thread_id": requestBody.ThreadId,
 		})
 	}
 }

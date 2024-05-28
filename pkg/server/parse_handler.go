@@ -23,7 +23,7 @@ func parsePromptHandler(m *completions.Majordomo) func(c *gin.Context) {
 			})
 			return
 		}
-		err = m.FillPrompt(&requestBody)
+		err = m.PreparePrompt(&requestBody)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"response": "error",

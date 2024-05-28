@@ -50,10 +50,10 @@ var _ = Describe("Majordomo", func() {
 			}
 
 			// We need to monkey-patch the scenario, since we don't have a real one
-			completions.GetScenarios = func() *completions.Scenarios {
-				return &completions.Scenarios{
+			completions.GetScenarios = func() *completions.Assistants {
+				return &completions.Assistants{
 					Common: "Here are some common instructions",
-					Scenarios: map[string]string{
+					Instructions: map[string]string{
 						"some-scenario": "Here are some instructions for the scenario",
 					},
 				}

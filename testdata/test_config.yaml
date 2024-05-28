@@ -1,6 +1,6 @@
 # Test data for test_config.yaml
 api_key: test-key
-scenarios: test/scenarios.yaml
+assistants: test/assistants.yaml
 code_snippets: code/snippets
 
 projects:

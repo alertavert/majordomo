@@ -1,11 +1,9 @@
 # Copyright (c) 2023-2024 AlertAvert.com
 # All rights reserved.
 # Created by Marco Massenzio, 2023-07-13
-#
-# This script is used to generate a new release of the project.
 
 name: Majordomo
-version: 0.4.1
+version: 0.5.0
 description: An LLM-powered code-generation assistant for expert developers
 author: Marco Massenzio (marco@alertavert.com)
 license: Proprietary

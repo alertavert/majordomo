@@ -197,8 +197,8 @@ func getSessionsForProjectHandler(m *completions.Majordomo) gin.HandlerFunc {
 		projectName := c.Param("project_name")
 		for _, p := range m.Config.Projects {
 			if p.Name == projectName {
-				sessions := m.GetSessionsForProject(projectName)
-				c.JSON(http.StatusOK, sessions)
+				// Not Implemented
+				c.JSON(http.StatusNotImplemented, gin.H{"error": "Not Implemented"})
 				return
 			}
 		}

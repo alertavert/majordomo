@@ -30,13 +30,13 @@ var _ = Describe("Config", func() {
 				c, err := config.LoadConfig(testConfigLocation)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(c.OpenAIApiKey).To(Equal("test-key"))
-				Expect(c.ScenariosLocation).To(HaveSuffix("test/scenarios.yaml"))
+				Expect(c.AssistantsLocation).To(HaveSuffix("test/assistants.yaml"))
 				Expect(c.CodeSnippetsDir).To(HaveSuffix("code/snippets"))
 			})
 			It("should expand relative paths", func() {
 				c, err := config.LoadConfig(testConfigLocation)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(c.ScenariosLocation).To(HavePrefix("../../testdata"))
+				Expect(c.AssistantsLocation).To(HavePrefix("../../testdata"))
 				Expect(c.CodeSnippetsDir).To(HavePrefix("../../testdata"))
 				Expect(c.CodeSnippetsDir).To(HaveSuffix("code/snippets"))
 			})
@@ -65,7 +65,7 @@ var _ = Describe("Config", func() {
 			It("should successfully save the configuration as a yaml file", func() {
 				c := &config.Config{
 					OpenAIApiKey:      "test-key",
-					ScenariosLocation: "test/scenarios.yaml",
+					AssistantsLocation: "test/assistants.yaml",
 					CodeSnippetsDir:   "code/snippets",
 					Projects: []config.Project{
 						{
@@ -89,7 +89,7 @@ var _ = Describe("Config", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(content.OpenAIApiKey).To(Equal("test-key"))
-				Expect(content.ScenariosLocation).To(HaveSuffix("test/scenarios.yaml"))
+				Expect(content.AssistantsLocation).To(HaveSuffix("test/assistants.yaml"))
 				Expect(content.CodeSnippetsDir).To(HaveSuffix("code/snippets"))
 				Expect(content.Projects).To(HaveLen(2))
 			})
