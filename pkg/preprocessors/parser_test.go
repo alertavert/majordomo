@@ -152,6 +152,8 @@ var _ = Describe("FilesystemStore", func() {
 	Context("Getting files from the filesystem", func() {
 		var store preprocessors.CodeStoreHandler
 		var codeMap preprocessors.SourceCodeMap
+		totalFilesCount := 0
+
 		BeforeEach(func() {
 			codeMap = make(preprocessors.SourceCodeMap)
 			// Copies the files from the testdata directory into a new temporary directory
@@ -159,6 +161,14 @@ var _ = Describe("FilesystemStore", func() {
 			src, dest, err := SetupTestFiles()
 			Expect(err).ShouldNot(HaveOccurred())
 			store = preprocessors.NewFilesystemStore(src, dest)
+			// Counts the files in the directory
+			err = filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+				if !info.IsDir() {
+					totalFilesCount++
+				}
+				return nil
+			})
+			Expect(err).ShouldNot(HaveOccurred())
 			// Fills in the source code map with the file paths in the test directory,
 			// but no contents
 			Expect(FillCodemap(TestdataDir, codeMap, false)).ShouldNot(HaveOccurred())
@@ -169,7 +179,7 @@ var _ = Describe("FilesystemStore", func() {
 		})
 		It("Should fill in the map with the correct file content", func() {
 			Expect(store.GetSourceCode(&codeMap)).ToNot(HaveOccurred())
-			Expect(len(codeMap)).To(Equal(7))
+			Expect(len(codeMap)).To(Equal(totalFilesCount))
 			for name, content := range codeMap {
 				data, err := os.ReadFile(filepath.Join(TestdataDir, name))
 				Expect(err).ToNot(HaveOccurred())

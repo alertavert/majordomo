@@ -1,0 +1,5 @@
+common: |
+  This should be a common instruction string but it's going to break
+instructions
+  - missing_colon: true
+  - bad_yaml: "this will cause an issue"
