@@ -84,7 +84,8 @@ func (m *Majordomo) SetActiveProject(projectName string) error {
 		return fmt.Errorf("project %s not found", projectName)
 	}
 	m.Config.ActiveProject = projectName
-	m.CodeStore = preprocessors.NewFilesystemStore(p.Location, m.Config.CodeSnippetsDir)
+	destDir := strings.Join([]string{m.Config.CodeSnippetsDir, p.Name}, "/")
+	m.CodeStore = preprocessors.NewFilesystemStore(p.Location, destDir)
 	return nil
 }
 
@@ -171,6 +172,7 @@ func (m *Majordomo) QueryBot(prompt *PromptRequest) (string, error) {
 	}
 	log.Debug().
 		Str("assistant_id", assistantId).
+		Str("assistant", prompt.Assistant).
 		Msg("assistant found")
 	// Create a Run - the model, and other parameters are set already in the Thread.
 	run, err := m.Client.CreateRun(context.Background(), prompt.ThreadId, openai.RunRequest{
