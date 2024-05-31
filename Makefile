@@ -68,7 +68,9 @@ build: cmd/main.go $(srcs)
 .PHONY: test
 test: $(srcs) $(test_srcs)  ## Runs all tests
 	@mkdir -p build/reports
-	ginkgo -p -keepGoing -cover -coverprofile=coverage.out -outputdir=build/reports $(pkgs)
+	ginkgo -keepGoing -cover -coverprofile=coverage.out -outputdir=build/reports $(pkgs)
+# Clean up the coverage files (they are not needed once the report is generated)
+	@find ./pkg -name "coverage.out" -exec rm {} \;
 
 .PHONY: watch
 watch: $(srcs) $(test_srcs)  ## Runs all tests every time a source or test file changes
