@@ -44,7 +44,8 @@ help: ## Display this help.
 img=$(shell docker images -q --filter=reference=$(image))
 clean: ## Cleans up the binary, container image and other data
 	@rm -rf build/*
-	@[ ! -z $(img) ] && docker rmi $(img) || true
+	@find . -name "*.out" -exec rm {} \;
+	@[ -n "$(img)" ] && docker rmi $(img) || true
 	@rm -rf certs
 
 version: ## Displays the current version tag (release)
