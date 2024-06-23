@@ -1,4 +1,4 @@
-# Copyright (c) AlertAvert.com.  All rights reserved.
+# Copyright (c) 2022-2024 AlertAvert.com.  All rights reserved.
 # Created by M. Massenzio, 2022-03-14
 
 GOOS ?= $(shell uname -s | tr "[:upper:]" "[:lower:]")
@@ -14,18 +14,11 @@ VERSION ?= $(shell cat settings.yaml | yq -r .version)
 GIT_COMMIT := $(shell git rev-parse --short HEAD)
 RELEASE := v$(VERSION)-g$(GIT_COMMIT)
 
-prog := majordomo
+prog := $(shell cat settings.yaml | yq -r .name)
 bin := $(prog)-$(RELEASE)_$(GOOS)-$(GOARCH)
 
-image := alertavert/$(prog)
-compose := docker/compose.yaml
-dockerfile := Dockerfile
-
 # Source files & Test files definitions
-#
-# Edit only the packages list, when adding new functionality,
-# the rest is deduced automatically.
-#
+
 pkgs := $(shell find pkg -mindepth 1 -type d)
 all_go := $(shell for d in $(pkgs); do find $$d -name "*.go"; done)
 test_srcs := $(shell for d in $(pkgs); do find $$d -name "*_test.go"; done)
@@ -34,7 +27,15 @@ srcs := $(filter-out $(test_srcs),$(all_go))
 ##@ General
 
 # The help target prints out all targets with their descriptions organized
-# beneath their categories.
+# beneath their categories. The categories are represented by '##@' and the
+# target descriptions by '##'. The awk commands is responsible for reading the
+# entire set of makefiles included in this invocation, looking for lines of the
+# file as xyz: ## something, and then pretty-format the target and help. Then,
+# if there's a line with ##@ something, that gets pretty-printed as a category.
+# More info on the usage of ANSI control characters for terminal formatting:
+# https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_parameters
+# More info on the awk command:
+# http://linuxcommand.org/lc3_adv_awk.php
 
 .PHONY: help
 help: ## Display this help.
@@ -54,6 +55,12 @@ version: ## Displays the current version tag (release)
 fmt: ## Formats the Go source code using 'go fmt'
 	@go fmt $(pkgs) ./cmd
 
+# FIXME: Move th github action release.yaml
+tag: ## Tags the current release
+	@echo "Tagging version v$(VERSION) at commit $(GIT_COMMIT)"
+	@git tag -a v$(VERSION) -m "Release $(RELEASE)"
+	@git push origin --tags
+
 ##@ Development
 .PHONY: build
 build: cmd/main.go $(srcs)
@@ -63,7 +70,6 @@ build: cmd/main.go $(srcs)
 		-ldflags "-X main.Release=$(RELEASE)" \
 		-o build/bin/$(bin) cmd/main.go
 	@echo "Majordomo Server $(shell basename $(bin)) built"
-
 
 .PHONY: test
 test: $(srcs) $(test_srcs)  ## Runs all tests
@@ -93,22 +99,24 @@ dev: build ## Runs the server binary in development mode
 ##@ Container Management
 # Convenience targets to run locally containers and
 # setup the test environments.
+image := alertavert/$(prog)
+dockerfile := Dockerfile
 
-tag: ## Tags the current release
-	@echo "Tagging version v$(VERSION) at commit $(GIT_COMMIT)"
-	@git tag -a v$(VERSION) -m "Release $(RELEASE)"
-	@git push origin --tags
-
+.PHONY: container
 container: build/bin/$(bin) ## Builds the container image
 	docker build -f $(dockerfile) \
 		--build-arg="VERSION=$(VERSION)" \
 		-t $(image):$(RELEASE) .
 
-.PHONY: run-container
-run-container:  ## Runs the container locally
-	docker run --rm -it -p 5000:5000 \
+.PHONY: start
+start:  ## Runs the container locally
+	docker run --rm -it -p $(PORT):$(PORT) \
 		-v $${HOME}/.majordomo:/etc/majordomo \
 		$(image):$(RELEASE)
+
+.PHONY: stop
+stop: ## Stops the running containers
+    docker stop -t 0 $(image):$(RELEASE)
 
 ##@ TLS Support
 #
