@@ -29,7 +29,8 @@ func (p Project) String() string {
 type Config struct {
 	LoadedFrom        string `yaml:"-"`
 	OpenAIApiKey      string `yaml:"api_key"`
-	ScenariosLocation string `yaml:"scenarios"`
+	ProjectId         string `yaml:"project_id"`
+	AssistantsLocation string `yaml:"assistants"`
 	CodeSnippetsDir   string `yaml:"code_snippets"`
 	Model             string `yaml:"model"`
 
@@ -92,8 +93,8 @@ func LoadConfig(filepath string) (*Config, error) {
 	// Converts relative paths in the test_config.yaml to absolute paths
 	// by pre-pending the path to the config file.
 	baseDir := path.Dir(filepath)
-	if !path.IsAbs(c.ScenariosLocation) {
-		c.ScenariosLocation = path.Join(baseDir, c.ScenariosLocation)
+	if !path.IsAbs(c.AssistantsLocation) {
+		c.AssistantsLocation = path.Join(baseDir, c.AssistantsLocation)
 	}
 	if !path.IsAbs(c.CodeSnippetsDir) {
 		c.CodeSnippetsDir = path.Join(baseDir, c.CodeSnippetsDir)

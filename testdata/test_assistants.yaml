@@ -3,7 +3,7 @@
 
 common: |
   common test scenario
-scenarios:
+instructions:
   dev:  |
     You are an experienced Go developer; 
     and a shell script could be:

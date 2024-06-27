@@ -1,6 +1,6 @@
 # Test data for test_config.yaml
 api_key: test-key
-scenarios: test/scenarios.yaml
+assistants: test/assistants.yaml
 code_snippets: code/snippets
 
 projects:
@@ -11,3 +11,8 @@ projects:
   - name: test-project-2
     location: test/location-2
     description: test-description-2
+
+  - name: actual
+    # Here the location is relative to the package folder of the running tests
+    location: ../../testdata/actual
+    description: This project is inside the testdata directory

@@ -1,0 +1,23 @@
+# Created M. Massenzio, 2024-05-27
+#
+# Sample Configuration file for Majordomo
+
+api_key: "sk-1234567890abcdef1234567890abcdef"
+project_id: "proj_1234567890abcdef1234567890abcdef"
+
+assistants: $HOME/.majordomo/data/instructions.yaml
+code_snippets: $HOME/.majordomo/data/code
+model: gpt-4o
+
+active_project: Majordomo
+projects:
+    - name: Majordomo
+      location: $HOME/Development/AlertAvert/majordomo
+    - name: common-utils
+      location: $HOME/Development/common-utils
+    - name: Chalk
+      description: Backstage integration
+      location: $HOME/Development/Playgrounds/chalk-dev
+
+pinecone:
+    api_key: "9889abcdef-defa-5dac-1234-123456789012"

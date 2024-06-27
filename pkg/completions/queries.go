@@ -7,25 +7,31 @@ package completions
 import (
 	"context"
 	"fmt"
-	"github.com/alertavert/gpt4-go/pkg/config"
-	"github.com/alertavert/gpt4-go/pkg/preprocessors"
-	"github.com/rs/zerolog/log"
-	"github.com/sashabaranov/go-openai"
 	"mime/multipart"
 	"strings"
+	"time"
+
+	"github.com/emirpasic/gods/sets/hashset"
+	"github.com/rs/zerolog/log"
+	"github.com/sashabaranov/go-openai"
+
+	"github.com/alertavert/gpt4-go/pkg/config"
+	"github.com/alertavert/gpt4-go/pkg/preprocessors"
 )
 
 const (
-	DefaultModel = openai.GPT4TurboPreview
+	DefaultModel = openai.GPT4Turbo
 )
 
 type PromptRequest struct {
+	// The assistant to use (selected by the user).
+	// TODO: this should be set at ThreadId creation time.
+	Assistant string `json:"assistant"`
+	// The Thread ID (if any) to keep track of past prompts/responses in the conversation.
+	// If empty, a new conversation is started.
+	ThreadId string `json:"thread_id,omitempty"`
 	// The user prompt.
 	Prompt string `json:"prompt"`
-	// The scenario to use (selected by the user).
-	Scenario string `json:"scenario"`
-	// The session ID (if any) to keep track of past prompts/responses in the conversation.
-	Session string `json:"session,omitempty"`
 }
 
 type Majordomo struct {
@@ -35,13 +41,7 @@ type Majordomo struct {
 	CodeStore preprocessors.CodeStoreHandler
 	// The Model to use
 	Model string
-
-	// The Sessions map, contains the history of all conversations.
-	// TODO: this should be moved to a database.
-	Sessions map[string]*Session
-
 	// The configuration object to manage the Projects in the server handlers
-	// TODO: Projects should be moved to a database.
 	Config *config.Config
 }
 
@@ -58,7 +58,6 @@ func NewMajordomo(cfg *config.Config) (*Majordomo, error) {
 	} else {
 		assistant.Model = cfg.Model
 	}
-	assistant.Sessions = make(map[string]*Session)
 
 	// Based on the active project, we set the code snippets directory.
 	p := cfg.GetActiveProject()
@@ -79,55 +78,19 @@ func NewMajordomo(cfg *config.Config) (*Majordomo, error) {
 	return assistant, nil
 }
 
-func (m *Majordomo) NewSessionIfNotExists(sessionID string) *Session {
-	if sessionID == "" {
-		log.Error().Msg("empty session ID")
-		return nil
-	}
-	sess, found := m.Sessions[sessionID]
-	if found {
-		return sess
-	}
-	sess = NewSession(sessionID, m.Config.ActiveProject)
-	m.Sessions[sessionID] = sess
-	return sess
-}
-
 func (m *Majordomo) SetActiveProject(projectName string) error {
 	p := m.Config.GetProject(projectName)
 	if p == nil {
 		return fmt.Errorf("project %s not found", projectName)
 	}
 	m.Config.ActiveProject = projectName
-	m.CodeStore = preprocessors.NewFilesystemStore(p.Location, m.Config.CodeSnippetsDir)
+	destDir := strings.Join([]string{m.Config.CodeSnippetsDir, p.Name}, "/")
+	m.CodeStore = preprocessors.NewFilesystemStore(p.Location, destDir)
 	return nil
 }
 
-func (m *Majordomo) GetSessionsForProject(projectName string) []*Session {
-	var sessions []*Session = make([]*Session, 0)
-	for _, sess := range m.Sessions {
-		if sess.Project == projectName {
-			sessions = append(sessions, sess)
-		}
-	}
-	return sessions
-}
-
-func (m *Majordomo) BuildMessages(prompt *PromptRequest) ([]openai.ChatCompletionMessage, error) {
-	// FIXME: we should retrieve the stored conversation from the database.
-	sess := m.NewSessionIfNotExists(prompt.Session)
-	if !sess.initialized {
-		err := sess.Init(prompt.Scenario)
-		if err != nil {
-			return nil, err
-		}
-	}
-	sess.AddPrompt(prompt.Prompt)
-	return sess.GetConversation(), nil
-}
-
-// FillPrompt fills the prompt with the code snippets.
-func (m *Majordomo) FillPrompt(prompt *PromptRequest) error {
+// PreparePrompt fills the prompt with the code snippets.
+func (m *Majordomo) PreparePrompt(prompt *PromptRequest) error {
 	p := prompt.Prompt
 	oldLen := len(p)
 	var parser = preprocessors.Parser{
@@ -152,6 +115,30 @@ func (m *Majordomo) FillPrompt(prompt *PromptRequest) error {
 	return nil
 }
 
+// CreateNewThread creates a new thread for the given project and returns the thread ID.
+func (m *Majordomo) CreateNewThread(project, assistant string) string {
+	t, err := m.Client.CreateThread(context.Background(), openai.ThreadRequest{
+		Metadata: map[string]any{"project": project, "assistant": assistant},
+	})
+	if err != nil {
+		log.Err(err).Msg("error creating thread")
+		return ""
+	}
+	var newThread = Thread{
+		ID:          t.ID,
+		Name:        "temp thread",
+		Assistant:   assistant,
+		Description: "Some brief description for this thread",
+	}
+	if threads, ok := Threads[project]; ok {
+		threads = append(threads, newThread)
+		Threads[project] = threads
+	} else {
+		Threads[project] = []Thread{newThread}
+	}
+	return t.ID
+}
+
 // QueryBot queries the LLM with the given prompt.
 func (m *Majordomo) QueryBot(prompt *PromptRequest) (string, error) {
 	if m.Client == nil {
@@ -161,42 +148,114 @@ func (m *Majordomo) QueryBot(prompt *PromptRequest) (string, error) {
 		return "", fmt.Errorf("code snippets store not initialized")
 	}
 
-	err := m.FillPrompt(prompt)
+	err := m.PreparePrompt(prompt)
 	if err != nil {
 		return "", err
 	}
-	messages, err := m.BuildMessages(prompt)
+
+	// TODO: create an appropriate context for the query.
+	// Create a new conversation if the thread ID is empty.
+	if prompt.ThreadId == "" {
+		prompt.ThreadId = m.CreateNewThread(m.Config.ActiveProject, prompt.Assistant)
+	}
+
+	// Creates a new conversation in the thread.
+	msg, err := m.Client.CreateMessage(context.Background(), prompt.ThreadId,
+		openai.MessageRequest{
+			Role:    "user",
+			Content: prompt.Prompt,
+		})
 	if err != nil {
 		return "", err
 	}
 	log.Debug().
-		Int("items", len(messages)).
-		Str("scenario", prompt.Scenario).
-		Str("session", prompt.Session).
+		// TODO: we should compute the number of tokens in debug mode only.
+		Int("content_len", len(msg.Content)).
+		Str("assistant", prompt.Assistant).
+		Str("thread_id", prompt.ThreadId).
 		Str("model", m.Model).
 		Msg("querying LLM")
 
-	resp, err := m.Client.CreateChatCompletion(
-		// TODO: we should have a user-configurable timeout.
-		context.Background(),
-		openai.ChatCompletionRequest{
-			Model:    m.Model,
-			Messages: messages,
-		})
+	// Find the assistant ID, given its name.
+	if prompt.Assistant == "" {
+		return "", fmt.Errorf("assistant name cannot be empty")
+	}
+	assistantId, err := m.GetAssistantId(prompt.Assistant)
 	if err != nil {
-		return "", fmt.Errorf("error querying chatbot: %v", err)
+		return "", fmt.Errorf("error getting assistant ID for '%s': %v", prompt.Assistant, err)
 	}
-	stopReason := resp.Choices[0].FinishReason
-	if stopReason != "stop" {
-		if stopReason == "length" {
-			log.Debug().Msg("too many tokens")
-			return "", fmt.Errorf("too many tokens (%d). "+
-				"Please consider truncating it, or starting a new conversation",
-				resp.Usage.TotalTokens)
+	log.Debug().
+		Str("assistant_id", assistantId).
+		Str("assistant", prompt.Assistant).
+		Msg("assistant found")
+	// Create a Run - the model, and other parameters are set already in the Thread.
+	run, err := m.Client.CreateRun(context.Background(), prompt.ThreadId, openai.RunRequest{
+		Model:       m.Model,
+		AssistantID: assistantId,
+	})
+	if err != nil {
+		return "", fmt.Errorf("error creating run: %v", err)
+	}
+	log.Debug().
+		Str("run_id", run.ID).
+		Str("thread_id", run.ThreadID).
+		Str("assistant_id", run.AssistantID).
+		Msg("created run")
+
+	done := false
+	// Get the response from the model.
+	for !done {
+		resp, err := m.Client.RetrieveRun(context.Background(), run.ThreadID, run.ID)
+		if err != nil {
+			return "", fmt.Errorf("error getting run: %v", err)
 		}
-		return "", fmt.Errorf("stopped for reason other than done: %s", stopReason)
+		switch resp.Status {
+		case openai.RunStatusInProgress, openai.RunStatusQueued:
+			// TODO: we should have a configurable interval, or maybe exponential backoff.
+			time.Sleep(5 * time.Second)
+		case openai.RunStatusCompleted:
+			log.Debug().
+				Int("tokens", resp.Usage.TotalTokens).
+				Msg("run completed")
+			done = true
+		case openai.RunStatusFailed:
+			return "", fmt.Errorf("run failed: %v", resp.LastError.Message)
+		case openai.RunStatusCancelled, openai.RunStatusCancelling, openai.RunStatusExpired:
+			return "", fmt.Errorf("run cancelled or expired")
+		case openai.RunStatusRequiresAction:
+			log.Warn().
+				Str("action", string(resp.RequiredAction.Type)).
+				Msg("action required")
+			return "", fmt.Errorf("action required")
+		default:
+			return "", fmt.Errorf("unexpected run status: %s", resp.Status)
+		}
 	}
-	botSays := resp.Choices[0].Message.Content
+
+	// Retrieve the most recent message in the Thread.
+	messages, err := m.Client.ListMessage(context.Background(), prompt.ThreadId, nil, nil, nil, nil)
+	if err != nil {
+		return "", fmt.Errorf("error listing messages: %v", err)
+	}
+	log.Debug().
+		Int("messages", len(messages.Messages)).
+		Str("last_id", *messages.LastID).
+		Str("first_id", *messages.FirstID).
+		Msg("messages")
+	// TODO: should use the FirstID instead, and validate it's from `assistant`.
+	botMessage := messages.Messages[0]
+	// TODO: there is a lot more information in the response that we should log.
+	if len(botMessage.Content) != 1 {
+		log.Warn().
+			Int("content_len", len(botMessage.Content)).
+			Msg("unexpected content length")
+	}
+	botSays := botMessage.Content[0].Text.Value
+	log.Debug().
+		Str("bot_says", botSays).
+		Msg("bot response")
+
+	// Parse the response from the model.
 	parser := preprocessors.Parser{
 		CodeMap: make(preprocessors.SourceCodeMap),
 	}
@@ -208,17 +267,7 @@ func (m *Majordomo) QueryBot(prompt *PromptRequest) (string, error) {
 	if err != nil {
 		log.Err(err).Msg("error storing source code")
 	}
-	sess, found := m.Sessions[prompt.Session]
-	if !found {
-		log.Error().
-			Str("session", prompt.Session).
-			Msg("session not found")
-	}
-	sess.AddResponse(botSays)
-	log.Debug().
-		Int("tokens", resp.Usage.TotalTokens).
-		Int("conversation_len", len(messages)).
-		Int("response_len", len(botSays)).Send()
+	log.Debug().Msg("response parsed, code snippets stored")
 	return botSays, nil
 }
 
@@ -235,4 +284,63 @@ func (m *Majordomo) SpeechToText(audioFile multipart.File) (string, error) {
 		return "", fmt.Errorf("error converting audio to text: %v", err)
 	}
 	return resp.Text, nil
+}
+
+// GetAssistantId returns the ID of the assistant with the given name.
+// TODO: this should be cached somewhere, as the assistants change infrequently.
+func (m *Majordomo) GetAssistantId(name string) (string, error) {
+	ctx := context.Background()
+	listAssistants, err := m.Client.ListAssistants(ctx, nil, nil, nil, nil)
+	if err != nil {
+		return "", fmt.Errorf("error listing assistants: %v", err)
+	}
+	for _, assts := range listAssistants.Assistants {
+		if *assts.Name == name {
+			return assts.ID, nil
+		}
+	}
+	return "", fmt.Errorf("assistant %s not found", name)
+}
+
+// CreateAssistants creates the OpenAI Assistants based on the instructions in the configuration file.
+func (m *Majordomo) CreateAssistants(assistants *Assistants) error {
+	ctx := context.Background()
+	// TODO: This should be configurable.
+	const DefaultTimeout = 1 * time.Second
+	context.WithTimeout(ctx, DefaultTimeout)
+
+	listAssistants, err := m.Client.ListAssistants(ctx, nil, nil, nil, nil)
+	if err != nil {
+		return fmt.Errorf("error listing assistants: %v", err)
+	}
+	// Make it easier to check if an assistant already exists.
+	existingAssistants := hashset.New()
+	for _, assts := range listAssistants.Assistants {
+		existingAssistants.Add(*assts.Name)
+	}
+	log.Debug().Msg(fmt.Sprintf("Existing Assistants: %v", existingAssistants.Values()))
+
+	for name, instructions := range assistants.Instructions {
+		if existingAssistants.Contains(name) {
+			log.Warn().Str("assistant", name).Msg("assistant already exists, " +
+				"updating not implemented yet")
+			continue
+		}
+		inst := fmt.Sprintf("%s\n%s", assistants.Common, instructions)
+		a, err := m.Client.CreateAssistant(ctx, openai.AssistantRequest{
+			Model:        m.Model,
+			Name:         &name,
+			Description:  nil,
+			Instructions: &inst,
+		})
+		if err != nil {
+			log.Err(err).Str("assistant", name).Msg("error creating assistant")
+			return err
+		}
+		log.Info().
+			Str("assistant_id", a.ID).
+			Str("assistant", *a.Name).
+			Msg("assistant created")
+	}
+	return nil
 }

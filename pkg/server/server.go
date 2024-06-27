@@ -50,9 +50,6 @@ func (s *Server) setupHandlers() {
 	r.POST("/parse", parsePromptHandler(s.assistant))
 	r.POST("/prompt", promptHandler(s.assistant))
 
-	// FIXME: Deprecated - replaced by the /assistants endpoint
-	r.GET("/scenarios", scenariosHandler)
-
 	// Projects routes
 	cfg := s.assistant.Config
 	r.GET("/projects", projectsGetHandler(cfg))
@@ -63,7 +60,7 @@ func (s *Server) setupHandlers() {
 	r.PUT("/projects/:project_name", projectPutHandler(cfg))
 	r.DELETE("/projects/:project_name", projectDeleteHandler(cfg))
 
-	// Assistants management routes
+	// Names management routes
 	r.GET("/assistants", assistantsGetHandler(s.assistant))
 }
 
