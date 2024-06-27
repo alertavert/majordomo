@@ -30,7 +30,7 @@ var _ = Describe("Integration Tests: When querying OpenAI", func() {
 	Context("with a valid API key", func() {
 		// Enable logging for the test.
 		It("can create a new thread", func() {
-			tid := activeBot.CreateNewThread()
+			tid := activeBot.CreateNewThread("My Project")
 			Expect(tid).NotTo(BeEmpty())
 		})
 		It("should return a response for a valid prompt", func() {

@@ -116,11 +116,23 @@ func (m *Majordomo) PreparePrompt(prompt *PromptRequest) error {
 }
 
 // CreateNewThread creates a new thread for the given project and returns the thread ID.
-func (m *Majordomo) CreateNewThread() string {
+func (m *Majordomo) CreateNewThread(project, assistant string) string {
 	t, err := m.Client.CreateThread(context.Background(), openai.ThreadRequest{})
 	if err != nil {
 		log.Err(err).Msg("error creating thread")
 		return ""
+	}
+	var newThread = Thread{
+		ID:        t.ID,
+		Name:      "temp thread",
+		Assistant: assistant,
+		Description: "Some brief description for this thread",
+	}
+	if threads, ok := Threads[project]; ok {
+		threads = append(threads, newThread)
+		Threads[project] = threads
+	} else {
+		Threads[project] = []Thread{newThread}
 	}
 	return t.ID
 }
@@ -142,7 +154,7 @@ func (m *Majordomo) QueryBot(prompt *PromptRequest) (string, error) {
 	// TODO: create an appropriate context for the query.
 	// Create a new conversation if the thread ID is empty.
 	if prompt.ThreadId == "" {
-		prompt.ThreadId = m.CreateNewThread()
+		prompt.ThreadId = m.CreateNewThread(m.Config.ActiveProject, prompt.Assistant)
 	}
 
 	// Creates a new conversation in the thread.

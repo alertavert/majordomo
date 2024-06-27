@@ -196,9 +196,15 @@ func getSessionsForProjectHandler(m *completions.Majordomo) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		projectName := c.Param("project_name")
 		for _, p := range m.Config.Projects {
+			var threads = completions.Threads[p.Name]
+			if threads == nil {
+				threads = []completions.Thread{}
+			}
 			if p.Name == projectName {
-				// Not Implemented
-				c.JSON(http.StatusNotImplemented, gin.H{"error": "Not Implemented"})
+				c.JSON(http.StatusOK, gin.H{
+					"project": p.Name,
+					"threads": threads,
+				})
 				return
 			}
 		}
