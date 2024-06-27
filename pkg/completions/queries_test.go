@@ -144,7 +144,11 @@ var _ = Describe("Majordomo", func() {
 			cfg.OpenAIApiKey = "invalid"
 			m, err := completions.NewMajordomo(cfg)
 			Expect(err).NotTo(HaveOccurred())
-			tid := m.CreateNewThread()
+			tid := m.CreateNewThread("My Project", "go_developer")
+			Expect(tid).To(BeEmpty())
+		})
+		It("should return an error if the project is not found", func() {
+			tid := majordomo.CreateNewThread("non-existent-project", "go_developer")
 			Expect(tid).To(BeEmpty())
 		})
 	})

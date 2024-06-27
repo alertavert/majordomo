@@ -117,15 +117,17 @@ func (m *Majordomo) PreparePrompt(prompt *PromptRequest) error {
 
 // CreateNewThread creates a new thread for the given project and returns the thread ID.
 func (m *Majordomo) CreateNewThread(project, assistant string) string {
-	t, err := m.Client.CreateThread(context.Background(), openai.ThreadRequest{})
+	t, err := m.Client.CreateThread(context.Background(), openai.ThreadRequest{
+		Metadata: map[string]any{"project": project, "assistant": assistant},
+	})
 	if err != nil {
 		log.Err(err).Msg("error creating thread")
 		return ""
 	}
 	var newThread = Thread{
-		ID:        t.ID,
-		Name:      "temp thread",
-		Assistant: assistant,
+		ID:          t.ID,
+		Name:        "temp thread",
+		Assistant:   assistant,
 		Description: "Some brief description for this thread",
 	}
 	if threads, ok := Threads[project]; ok {
@@ -160,8 +162,8 @@ func (m *Majordomo) QueryBot(prompt *PromptRequest) (string, error) {
 	// Creates a new conversation in the thread.
 	msg, err := m.Client.CreateMessage(context.Background(), prompt.ThreadId,
 		openai.MessageRequest{
-			Role:     "user",
-			Content:  prompt.Prompt,
+			Role:    "user",
+			Content: prompt.Prompt,
 		})
 	if err != nil {
 		return "", err
@@ -188,7 +190,7 @@ func (m *Majordomo) QueryBot(prompt *PromptRequest) (string, error) {
 		Msg("assistant found")
 	// Create a Run - the model, and other parameters are set already in the Thread.
 	run, err := m.Client.CreateRun(context.Background(), prompt.ThreadId, openai.RunRequest{
-		Model:     m.Model,
+		Model:       m.Model,
 		AssistantID: assistantId,
 	})
 	if err != nil {
@@ -211,7 +213,7 @@ func (m *Majordomo) QueryBot(prompt *PromptRequest) (string, error) {
 		case openai.RunStatusInProgress, openai.RunStatusQueued:
 			// TODO: we should have a configurable interval, or maybe exponential backoff.
 			time.Sleep(5 * time.Second)
-		case  openai.RunStatusCompleted:
+		case openai.RunStatusCompleted:
 			log.Debug().
 				Int("tokens", resp.Usage.TotalTokens).
 				Msg("run completed")

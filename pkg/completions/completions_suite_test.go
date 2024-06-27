@@ -26,7 +26,7 @@ var apiKey string
 
 var _ = BeforeSuite(func() {
 	// Silence the logs
-	zerolog.SetGlobalLevel(zerolog.Disabled)
+	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	apiKey = os.Getenv("OPENAI_API_KEY")
 	if apiKey != "" {
 		// This will help debug if the test fails,
