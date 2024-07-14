@@ -294,9 +294,15 @@ func (m *Majordomo) GetAssistantId(name string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error listing assistants: %v", err)
 	}
-	for _, assts := range listAssistants.Assistants {
-		if *assts.Name == name {
-			return assts.ID, nil
+	for _, assistant := range listAssistants.Assistants {
+		if assistant.Name == nil {
+			log.Error().
+				Str("assistant_id", assistant.ID).
+				Msg("assistant has no name")
+			continue
+		}
+		if *assistant.Name == name {
+			return assistant.ID, nil
 		}
 	}
 	return "", fmt.Errorf("assistant %s not found", name)
