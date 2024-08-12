@@ -2,12 +2,15 @@ package server
 
 import (
 	"fmt"
-	"github.com/alertavert/gpt4-go/pkg/completions"
-	"github.com/alertavert/gpt4-go/pkg/config"
-	"github.com/gin-gonic/gin"
-	"github.com/rs/zerolog/log"
 	"net/http"
 	"strings"
+
+	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog/log"
+
+	"github.com/alertavert/gpt4-go/pkg/completions"
+	"github.com/alertavert/gpt4-go/pkg/config"
+	"github.com/alertavert/gpt4-go/pkg/threads"
 )
 
 type ProjectResponse struct {
@@ -196,14 +199,14 @@ func getSessionsForProjectHandler(m *completions.Majordomo) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		projectName := c.Param("project_name")
 		for _, p := range m.Config.Projects {
-			var threads = completions.Threads[p.Name]
-			if threads == nil {
-				threads = []completions.Thread{}
+			var ths = m.Threads.GetThreads(p.Name)
+			if ths == nil {
+				ths = []threads.Thread{}
 			}
 			if p.Name == projectName {
 				c.JSON(http.StatusOK, gin.H{
 					"project": p.Name,
-					"threads": threads,
+					"threads": ths,
 				})
 				return
 			}

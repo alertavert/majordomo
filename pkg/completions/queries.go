@@ -7,6 +7,7 @@ package completions
 import (
 	"context"
 	"fmt"
+	"github.com/alertavert/gpt4-go/pkg/threads"
 	"mime/multipart"
 	"strings"
 	"time"
@@ -37,10 +38,16 @@ type PromptRequest struct {
 type Majordomo struct {
 	// The OpenAI Client
 	Client *openai.Client
+
 	// The Code Snippets CodeStore
 	CodeStore preprocessors.CodeStoreHandler
+
+	// Threads of conversation with the LLM model.
+	Threads  *threads.ThreadStore
+
 	// The Model to use
 	Model string
+
 	// The configuration object to manage the Projects in the server handlers
 	Config *config.Config
 }
@@ -64,9 +71,10 @@ func NewMajordomo(cfg *config.Config) (*Majordomo, error) {
 	if p == nil {
 		return nil, fmt.Errorf("no project found for %s", cfg.ActiveProject)
 	}
-	destDir := strings.Join([]string{cfg.CodeSnippetsDir, p.Name}, "/")
+	destDir := strings.Join([]string{p.Location, cfg.CodeSnippetsDir}, "/")
 	assistant.CodeStore = preprocessors.NewFilesystemStore(p.Location, destDir)
 	assistant.Config = cfg
+	assistant.Threads = threads.NewThreadStore(cfg)
 
 	log.Debug().
 		Str("model", assistant.Model).
@@ -84,7 +92,7 @@ func (m *Majordomo) SetActiveProject(projectName string) error {
 		return fmt.Errorf("project %s not found", projectName)
 	}
 	m.Config.ActiveProject = projectName
-	destDir := strings.Join([]string{m.Config.CodeSnippetsDir, p.Name}, "/")
+	destDir := strings.Join([]string{p.Location, m.Config.CodeSnippetsDir}, "/")
 	m.CodeStore = preprocessors.NewFilesystemStore(p.Location, destDir)
 	return nil
 }
@@ -124,18 +132,13 @@ func (m *Majordomo) CreateNewThread(project, assistant string) string {
 		log.Err(err).Msg("error creating thread")
 		return ""
 	}
-	var newThread = Thread{
+	var newThread = threads.Thread{
 		ID:          t.ID,
 		Name:        "temp thread",
 		Assistant:   assistant,
 		Description: "Some brief description for this thread",
 	}
-	if threads, ok := Threads[project]; ok {
-		threads = append(threads, newThread)
-		Threads[project] = threads
-	} else {
-		Threads[project] = []Thread{newThread}
-	}
+	err = m.Threads.AddThread(project, newThread)
 	return t.ID
 }
 

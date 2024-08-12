@@ -31,14 +31,13 @@ var _ = Describe("Config", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(c.OpenAIApiKey).To(Equal("test-key"))
 				Expect(c.AssistantsLocation).To(HaveSuffix("test/assistants.yaml"))
-				Expect(c.CodeSnippetsDir).To(HaveSuffix("code/snippets"))
+				Expect(c.CodeSnippetsDir).To(Equal(".majordomo"))
 			})
 			It("should expand relative paths", func() {
 				c, err := config.LoadConfig(testConfigLocation)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(c.AssistantsLocation).To(HavePrefix("../../testdata"))
-				Expect(c.CodeSnippetsDir).To(HavePrefix("../../testdata"))
-				Expect(c.CodeSnippetsDir).To(HaveSuffix("code/snippets"))
+				Expect(c.CodeSnippetsDir).To(Equal(".majordomo"))
 			})
 		})
 		Context("with configured projects", func() {
@@ -66,7 +65,7 @@ var _ = Describe("Config", func() {
 				c := &config.Config{
 					OpenAIApiKey:      "test-key",
 					AssistantsLocation: "test/assistants.yaml",
-					CodeSnippetsDir:   "code/snippets",
+					CodeSnippetsDir:   ".snippets",
 					Projects: []config.Project{
 						{
 							Name:        "test-project",
@@ -90,7 +89,7 @@ var _ = Describe("Config", func() {
 
 				Expect(content.OpenAIApiKey).To(Equal("test-key"))
 				Expect(content.AssistantsLocation).To(HaveSuffix("test/assistants.yaml"))
-				Expect(content.CodeSnippetsDir).To(HaveSuffix("code/snippets"))
+				Expect(content.CodeSnippetsDir).To(HaveSuffix("snippets"))
 				Expect(content.Projects).To(HaveLen(2))
 			})
 

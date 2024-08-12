@@ -27,14 +27,34 @@ func (p Project) String() string {
 }
 
 type Config struct {
+	// LoadedFrom is the path from which the Config was loaded.
 	LoadedFrom        string `yaml:"-"`
+
+	// OpenAIApiKey is the API key to use for OpenAI API requests.
 	OpenAIApiKey      string `yaml:"api_key"`
+
+	// ProjectId is the ID of the project to use for OpenAI API requests.
 	ProjectId         string `yaml:"project_id"`
+
+	// AssistantsLocation is the path to the YAML file containing the instructions
+	// to create the assistants' system prompts.
 	AssistantsLocation string `yaml:"assistants"`
+
+	// ThreadsLocation is the path to the directory where the threads are stored.
+	ThreadsLocation string `yaml:"threads_location"`
+
+	// CodeSnippetsDir is the name of the directory, inside each respective
+	// project's location, where the code snippets are stored.
 	CodeSnippetsDir   string `yaml:"code_snippets"`
+
+	// Model is the name of the model to use for OpenAI API requests.
 	Model             string `yaml:"model"`
 
+	// ActiveProject is the name of the project that is currently active and will
+	// be used to fetch the files from (and save snippets to).
 	ActiveProject string    `yaml:"active_project"`
+
+	// Projects is a list of projects that are configured in the system.
 	Projects      []Project `yaml:"projects"`
 }
 
@@ -95,9 +115,6 @@ func LoadConfig(filepath string) (*Config, error) {
 	baseDir := path.Dir(filepath)
 	if !path.IsAbs(c.AssistantsLocation) {
 		c.AssistantsLocation = path.Join(baseDir, c.AssistantsLocation)
-	}
-	if !path.IsAbs(c.CodeSnippetsDir) {
-		c.CodeSnippetsDir = path.Join(baseDir, c.CodeSnippetsDir)
 	}
 	if c.ActiveProject == "" && len(c.Projects) > 0 {
 		c.ActiveProject = c.Projects[0].Name
