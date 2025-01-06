@@ -19,12 +19,7 @@ jobs:
     - name: Use Go 1.21
       uses: actions/setup-go@v4
       with:
-        go-version: "1.21"
-
-    - name: Use Node.js v20
-      uses: actions/setup-node@v3
-      with:
-        node-version: '20'
+        go-version: "1.22"
 
     - run: go get github.com/onsi/ginkgo/ginkgo
     - run: go test ./pkg/...

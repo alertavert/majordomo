@@ -43,7 +43,7 @@ type Majordomo struct {
 	CodeStore preprocessors.CodeStoreHandler
 
 	// Threads of conversation with the LLM model.
-	Threads  *threads.ThreadStore
+	Threads *threads.ThreadStore
 
 	// The Model to use
 	Model string
@@ -236,7 +236,9 @@ func (m *Majordomo) QueryBot(prompt *PromptRequest) (string, error) {
 	}
 
 	// Retrieve the most recent message in the Thread.
-	messages, err := m.Client.ListMessage(context.Background(), prompt.ThreadId, nil, nil, nil, nil)
+	messages, err := m.Client.ListMessage(
+		context.Background(),
+		prompt.ThreadId, nil, nil, nil, nil, nil)
 	if err != nil {
 		return "", fmt.Errorf("error listing messages: %v", err)
 	}
