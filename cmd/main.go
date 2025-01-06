@@ -45,7 +45,6 @@ func main() {
 	log.Info().
 		Str("configPath", cfg.LoadedFrom).
 		Str("instructions", cfg.AssistantsLocation).
-		Str("snippets", cfg.CodeSnippetsDir).
 		Msg("Loaded config")
 
 

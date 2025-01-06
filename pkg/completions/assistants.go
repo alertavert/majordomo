@@ -52,19 +52,3 @@ func ReadInstructions(location string) (*Assistants, error) {
 	}
 	return &assistants, nil
 }
-
-// Thread models simply the ID and name of the Thread.
-// The ID is used to retrieve the Thread from the OpenAI API; while the name is
-// used to display the Thread in the UI.
-type Thread struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-	Assistant string `json:"assistant"`
-	Description string `json:"description"`
-}
-
-// ThreadsMap is a map of Project names to their respective Threads.
-// TODO: Will need to eventually store the Threads (per Project) in persistent storage.
-type ThreadsMap map[string][]Thread
-
-var Threads ThreadsMap = make(ThreadsMap)

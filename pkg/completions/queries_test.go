@@ -76,7 +76,7 @@ var _ = Describe("Majordomo", func() {
 			Expect(fsStore.SourceCodeDir).To(Equal("test/location-2"))
 			// The destination for the code returned by the bot should be as
 			// configured in the test_config.yaml file, ending with the project name.
-			Expect(fsStore.DestCodeDir).To(HaveSuffix("code/snippets/test-project-2"))
+			Expect(fsStore.DestCodeDir).To(HaveSuffix("test/location-2/.majordomo"))
 		})
 	})
 	Describe("When parsing a user prompt", func() {

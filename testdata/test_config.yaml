@@ -1,7 +1,7 @@
 # Test data for test_config.yaml
 api_key: test-key
 assistants: test/assistants.yaml
-code_snippets: code/snippets
+code_snippets: .majordomo
 
 projects:
   - name: test-project
