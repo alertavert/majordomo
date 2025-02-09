@@ -116,7 +116,7 @@ start:  ## Runs the container locally
 
 .PHONY: stop
 stop: ## Stops the running containers
-    docker stop -t 0 $(image):$(RELEASE)
+	docker stop -t 0 $(image):$(RELEASE)
 
 ##@ TLS Support
 #

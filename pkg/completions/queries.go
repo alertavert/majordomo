@@ -193,7 +193,7 @@ func (m *Majordomo) QueryBot(prompt *PromptRequest) (string, error) {
 		Msg("assistant found")
 	// Create a Run - the model, and other parameters are set already in the Thread.
 	run, err := m.Client.CreateRun(context.Background(), prompt.ThreadId, openai.RunRequest{
-		Model:       m.Model,
+		// Model:       m.Model,
 		AssistantID: assistantId,
 	})
 	if err != nil {
