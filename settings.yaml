@@ -3,7 +3,7 @@
 # Created by Marco Massenzio, 2023-07-13
 
 name: majordomo
-version: 0.6.1
+version: 0.7.0
 description: An LLM-powered code-generation assistant for expert developers
 author: Marco Massenzio (marco@alertavert.com)
 license: Proprietary

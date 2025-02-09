@@ -67,6 +67,18 @@ var _ = Describe("Majordomo", func() {
 			err := majordomo.SetActiveProject("non-existent-project")
 			Expect(err).To(HaveOccurred())
 		})
+		It("Will use the correct location for the code snippets", func() {
+			// First check that the Config has the correct values
+			cfg := majordomo.Config
+			prj := cfg.GetActiveProject()
+			Expect(prj).NotTo(BeNil())
+			Expect(prj.ResolvedCodeSnippetsDir).To(HaveSuffix("test/location/.majordomo"))
+			// This should also be what the CodeStore uses
+			Expect(majordomo.CodeStore).NotTo(BeNil())
+			// We cast the CodeStore to be a FilesystemStore to access the Location field.
+			fsStore := majordomo.CodeStore.(*preprocessors.FilesystemStore)
+			Expect(fsStore.DestCodeDir).To(HaveSuffix("test/location/.majordomo"))
+		})
 		It("will set the CodeStore to the new project's location", func() {
 			err := majordomo.SetActiveProject("test-project-2")
 			Expect(err).NotTo(HaveOccurred())

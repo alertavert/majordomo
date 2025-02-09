@@ -7,16 +7,16 @@ package preprocessors
 import (
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 	"regexp"
 )
 
 const (
 	ErrorNoCodeSnippetsFound = "no code found for %s: %v"
-	ErrorReadingCodeSnippet  = "error while reading %s: %v"
 
-	// TODO: there is some optimization that can be done here, but the gains are probably not worth it
+	// TODO: replace these Regex patterns with a more robust solution, like
+	// 	inline commands (such as LOAD, SAVE, etc.)
+	// 	See #19
+
 	FilepathPattern    = `^/?([\w.-]+/?)+$`
 	CodeSnippetPattern = `'''([\w/.]+/?)\n([\s\S]+?)'''`
 	PromptCodePattern  = `'''([\w/.]+/?)\n'''`
@@ -102,51 +102,4 @@ func (p *Parser) FillPrompt(prompt string) (string, error) {
 			fmt.Sprintf("'''%s\n%s'''", filePath, content))
 	}
 	return prompt, nil
-}
-
-// FilesystemStore is a CodeStoreHandler that reads and writes code snippets from/to the filesystem
-type FilesystemStore struct {
-	// SourceCodeDir is the directory where the code snippets are read from
-	SourceCodeDir string
-	// DestCodeDir is the directory where the code snippets are saved to
-	DestCodeDir string
-}
-
-func (fp *FilesystemStore) GetSourceCode(codeMap *SourceCodeMap) error {
-	for relPath := range *codeMap {
-		content, err := os.ReadFile(filepath.Join(fp.SourceCodeDir, relPath))
-		if err != nil {
-			return errors.New(fmt.Sprintf(ErrorReadingCodeSnippet, relPath, err))
-		}
-		(*codeMap)[relPath] = string(content)
-	}
-	return nil
-}
-
-func (fp *FilesystemStore) PutSourceCode(codemap SourceCodeMap) error {
-	for relPath, content := range codemap {
-		absPath := filepath.Join(fp.DestCodeDir, relPath)
-		dir := filepath.Dir(absPath)
-		// Creates the directory if it doesn't exist
-		if _, err := os.Stat(dir); os.IsNotExist(err) {
-			err := os.MkdirAll(dir, 0755)
-			if err != nil {
-				return err
-			}
-		}
-		// Writes to the file in its respective directory
-		err := os.WriteFile(absPath, []byte(content), 0644)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// NewFilesystemStore creates a new filesystem-based CodeStoreHandler
-func NewFilesystemStore(sourceDir, destDir string) CodeStoreHandler {
-	return &FilesystemStore{
-		SourceCodeDir: sourceDir,
-		DestCodeDir:   destDir,
-	}
 }

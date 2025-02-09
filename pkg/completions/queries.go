@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"github.com/alertavert/gpt4-go/pkg/threads"
 	"mime/multipart"
-	"strings"
 	"time"
 
 	"github.com/emirpasic/gods/sets/hashset"
@@ -71,17 +70,15 @@ func NewMajordomo(cfg *config.Config) (*Majordomo, error) {
 	if p == nil {
 		return nil, fmt.Errorf("no project found for %s", cfg.ActiveProject)
 	}
-	destDir := strings.Join([]string{p.Location, cfg.CodeSnippetsDir}, "/")
-	assistant.CodeStore = preprocessors.NewFilesystemStore(p.Location, destDir)
+	assistant.CodeStore = *preprocessors.GetCodeStoreHandler(p)
 	assistant.Config = cfg
 	assistant.Threads = threads.NewThreadStore(cfg)
 
 	log.Debug().
 		Str("model", assistant.Model).
-		Str("active_project", cfg.ActiveProject).
+		Str("active_project", p.Name).
 		Str("source_dir", p.Location).
-		Str("code_snippets", destDir).
-		Str("snippets", cfg.CodeSnippetsDir).
+		Str("code_snippets", p.ResolvedCodeSnippetsDir).
 		Msg("Majordomo assistant initialized")
 	return assistant, nil
 }
@@ -92,8 +89,12 @@ func (m *Majordomo) SetActiveProject(projectName string) error {
 		return fmt.Errorf("project %s not found", projectName)
 	}
 	m.Config.ActiveProject = projectName
-	destDir := strings.Join([]string{p.Location, m.Config.CodeSnippetsDir}, "/")
-	m.CodeStore = preprocessors.NewFilesystemStore(p.Location, destDir)
+	m.CodeStore = *preprocessors.GetCodeStoreHandler(p)
+	log.Debug().
+		Str("active_project", p.Name).
+		Str("source_dir", p.Location).
+		Str("code_snippets", p.ResolvedCodeSnippetsDir).
+		Msg("New Active Project set")
 	return nil
 }
 
