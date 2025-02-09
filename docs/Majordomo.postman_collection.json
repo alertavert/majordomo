@@ -1,0 +1,278 @@
+{
+	"info": {
+		"_postman_id": "9f5c0d33-0992-48a3-b2ba-253e28785319",
+		"name": "Majordomo",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "18351"
+	},
+	"item": [
+		{
+			"name": "Echo Prompt with Parsing",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"prompt\": \"this is a test\\n'''pkg/server/audio_handler.go\\n'''\" \n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:5005/parse",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5005",
+					"path": [
+						"parse"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Simple Prompt query",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"prompt\": \"This is  a test, simply respond `got it, chief`\" ,\n    \"assistant\": \"Lamia\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{server}}/prompt",
+					"host": [
+						"{{server}}"
+					],
+					"path": [
+						"prompt"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "All available Assistants",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"active_project\": \"Majordomo-App\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{server}}/assistants",
+					"host": [
+						"{{server}}"
+					],
+					"path": [
+						"assistants"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Send Audio",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "audio/m4a",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "audio",
+							"type": "file",
+							"src": "/Users/marco/Desktop/Majordomo-test.m4a"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:5005/command",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "5005",
+					"path": [
+						"command"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create new project",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"Name\": \"Chalk Dev Project\",\n    \"Description\": \"Chalk integration with Backstage\",\n    \"Location\": \"/home/marco/Development/Playgrounds/chalk-dev\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{server}}/projects",
+					"host": [
+						"{{server}}"
+					],
+					"path": [
+						"projects"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "All projects",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{server}}/projects",
+					"host": [
+						"{{server}}"
+					],
+					"path": [
+						"projects"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Project Majordomo",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{server}}/projects/Majordomo",
+					"host": [
+						"{{server}}"
+					],
+					"path": [
+						"projects",
+						"Majordomo"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Remove project",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{server}}/projects/Chalk",
+					"host": [
+						"{{server}}"
+					],
+					"path": [
+						"projects",
+						"Chalk"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Sessions for Project",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{server}}/projects/Majordomo/sessions",
+					"host": [
+						"{{server}}"
+					],
+					"path": [
+						"projects",
+						"Majordomo",
+						"sessions"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Active Project",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"active_project\": \"UsersUI\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{server}}/projects",
+					"host": [
+						"{{server}}"
+					],
+					"path": [
+						"projects"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Follow up Prompt query",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"prompt\": \"This is  a follow up query, simply respond `still here to help, chief`\" ,\n    \"thread_id\": \"thread_MrD8AWDNsbvLGtBjtGHEDI3K\",\n    \"assistant\": \"Lamia\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{server}}/prompt",
+					"host": [
+						"{{server}}"
+					],
+					"path": [
+						"prompt"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

@@ -9,13 +9,19 @@ endif
 GOMOD := $(shell go list -m)
 
 # Versioning
-# The `version` is a static value, set in settings.yaml, and ONLY used to tag the release.
+#
+# The `version` is a static value, set in settings.yaml,
+# and ONLY used to tag the release (and its associated container).
 VERSION ?= $(shell cat settings.yaml | yq -r .version)
 GIT_COMMIT := $(shell git rev-parse --short HEAD)
 RELEASE := v$(VERSION)-g$(GIT_COMMIT)
 
-prog := $(shell cat settings.yaml | yq -r .name)
+prog ?= $(shell cat settings.yaml | yq -r .name)
 bin := $(prog)-$(RELEASE)_$(GOOS)-$(GOARCH)
+# Convenience targets to run locally containers and
+# setup the test environments.
+image := alertavert/$(prog):${VERSION}
+
 
 # Source files & Test files definitions
 
@@ -63,7 +69,7 @@ tag: ## Tags the current release
 
 ##@ Development
 .PHONY: build
-build: cmd/main.go $(srcs)
+build: cmd/main.go $(srcs) ## Builds the binary
 	@mkdir -p build/bin
 	@echo "Building rel. $(RELEASE); OS/Arch: $(GOOS)/$(GOARCH) - Pkg: $(GOMOD)"
 	@GOOS=$(GOOS) GOARCH=$(GOARCH) go build \
@@ -97,16 +103,13 @@ dev: build ## Runs the server binary in development mode
 	build/bin/$(bin) -debug -port $(PORT)
 
 ##@ Container Management
-# Convenience targets to run locally containers and
-# setup the test environments.
-image := alertavert/$(prog)
 dockerfile := Dockerfile
 
 .PHONY: container
-container: build/bin/$(bin) ## Builds the container image
+container: ## Builds the container image
 	docker build -f $(dockerfile) \
 		--build-arg="VERSION=$(VERSION)" \
-		-t $(image):$(RELEASE) .
+		-t $(image) .
 
 .PHONY: start
 start:  ## Runs the container locally

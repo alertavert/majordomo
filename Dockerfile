@@ -1,5 +1,5 @@
 # Use a builder image to build the binary
-FROM golang:1.21 as builder
+FROM golang:1.22 AS builder
 ARG VERSION
 WORKDIR /app
 
@@ -9,7 +9,8 @@ RUN go mod download
 
 # CGO_ENABLED=0 is **required** in order to build a static binary, otherwise
 # it will fail to run in the Alpine image.
-RUN make  CGO_ENABLED=0 GOOS=linux GOARCH=amd64 VERSION=${VERSION} build
+RUN make  CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+    prog=majordomo VERSION=${VERSION} build
 
 # ----
 FROM alpine:3.19
@@ -17,13 +18,13 @@ ARG VERSION
 WORKDIR /opt/majordomo
 
 # Copy the Pre-built binary file from the previous stage
-COPY --from=builder /app/build/bin/majordomo-v${VERSION}-g*_linux-amd64 ./majordomo
+COPY --from=builder "/app/build/bin/majordomo-v$VERSION-g*_linux-amd64" ./majordomo
 
 # Change ownership of the binary to our non-root user
 #RUN groupadd majordomo && useradd -g majordomo majordomo
 RUN addgroup -S majordomo && adduser -S majordomo -G majordomo
 
-RUN chown majordomo:majordomo majordomo
+RUN chown majordomo:majordomo ./majordomo
 USER majordomo
 
 EXPOSE 5000
