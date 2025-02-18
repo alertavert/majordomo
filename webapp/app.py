@@ -1,9 +1,10 @@
+from time import sleep
 from typing import Tuple, List
 
 import streamlit as st
 from streamlit_option_menu import option_menu
 
-from majordomo.session import (
+from majordomo.api import (
     get_projects,
     get_assistants,
     get_conversations, Project, Assistant, new_conversation, Conversation,
@@ -34,11 +35,28 @@ def get_assistant_from_name(assistant_name: str) -> Assistant | None:
         if a.name == assistant_name:
             return a
 
+
 def get_conversation_from_name(conv_name: str, project_name: str) -> Conversation:
     return next(c for c in list_conversations(project_name) if c.name == conv_name)
 
+
+def create_conversation(name, project, assistant):
+    new_conversation(
+        name=name,
+        assistant=get_assistant_from_name(assistant),
+        project=get_project_from_name(project),
+    )
+
+def render_conversation():
+    for message in st.session_state.conversation:
+        for role, text in message.items():
+            with st.chat_message(role):
+                st.write(text)
+
 def main():
     st.set_page_config(page_title="Majordomo")
+    if "conversation" not in st.session_state:
+        st.session_state.conversation = []
 
     header_cols = st.columns([1, 2])
     with header_cols[0]:
@@ -56,40 +74,50 @@ def main():
         )
 
     if selected == "Ask Majordomo":
-        table_col1, table_col2 = st.columns(2)
-        projects = list_projects()
-        operators = list_assistants()
-        with table_col1:
-            active_project = st.selectbox("Active Project:", [p.name for p in projects])
-        with table_col2:
-            selected_conversation = None
-            if active_project:
-                conversations = list_conversations(active_project)
-                if len(conversations) > 0:
-                    selected_conversation = st.selectbox("Select Column", [c.name for c in conversations])
-                else:
-                    popover = st.popover("New Conversation")
-                    with popover:
-                        selected_assistant = st.segmented_control(
-                            "",
-                            [o.name for o in operators],
-                            selection_mode="single"
-                        )
-                        conv_name = st.text_input("Name of the new conversation")
-                        if conv_name and selected_assistant:
-                            new_conv = new_conversation(
-                                name=conv_name,
-                                assistant=get_assistant_from_name(selected_assistant),
-                                project=get_project_from_name(active_project),
-                            )
-                            conversations.append(new_conv)
-        st.write(f"{[conv.name for conv in conversations]}")
-        if selected_conversation:
-            conv = get_conversation_from_name(selected_conversation, active_project)
-            st.write(f"Asking {conv.assistant.name} about {conv.name}")
-            prompt = st.text_input("", label_visibility="collapsed",
-                                   placeholder="Ask Majordomo Anything About Coding")
-            st.code(f"Asking {conv.assistant.name} about {prompt}")
+        header = st.container(border=True)
+        chat_area = st.container(height=500)
+        prompt_area = st.container()
+        with header:
+            proj_col, conv_col, add_col = st.columns([0.4, 0.3, 0.2])
+            projects = list_projects()
+            assistants = list_assistants()
+            with proj_col:
+                active_project = st.selectbox("Project", [p.name for p in projects])
+            with conv_col:
+                selected_conversation = None
+                if active_project:
+                    conversations = list_conversations(active_project)
+                    selected_conversation = st.selectbox("Conversation", [c.name for c in conversations])
+            with add_col:
+                st.html("<span style='margin: 0px; padding: 0px; font-size:12px'>New Conversation</span>")
+                popover = st.popover("", icon=":material/add:")
+                with popover:
+                    selected_assistant = st.segmented_control(
+                        "Assistants",
+                        [o.name for o in assistants],
+                        selection_mode="single"
+                    )
+                    conv_name = st.text_input("Name of the new conversation")
+                    st.button(
+                        "Create",
+                        on_click=create_conversation,
+                        args=[conv_name, active_project, selected_assistant]
+                    )
+        with chat_area:
+            render_conversation()
+        with prompt_area:
+            if selected_conversation:
+                conv = get_conversation_from_name(selected_conversation, active_project)
+                prompt = st.chat_input("Ask Majordomo")
+                if prompt:
+                    st.session_state.conversation.append({"USER": prompt})
+                    try:
+                        with st.spinner("Asking Majordomo..."):
+
+                            sleep(2)
+                            st.session_state.conversation.append({"ASSISTANT": "This is a mock response."})
+                    except Exception as e:
+                        st.error(f"An error occurred: {str(e)}")
     elif selected == "About":
         st.header("About Majordomo")
         st.write("""
