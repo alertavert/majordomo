@@ -1,54 +1,21 @@
 import logging
 import sys
-from time import sleep
-from typing import Tuple, List
 
 import streamlit as st
 from streamlit_option_menu import option_menu
 
 from majordomo.api import (
-    get_projects,
-    get_assistants,
-    get_conversations, Project, Assistant, new_conversation, Conversation,
+    ask_assistant,
+)
+from majordomo import (
+    list_projects,
+    list_assistants,
+    list_conversations,
+    get_conversation_from_name,
+    create_conversation,
 )
 from utils import setup_logger, get_logger
 
-
-@st.cache_data
-def list_projects() -> List[Project]:
-    return get_projects()
-
-
-@st.cache_data
-def list_assistants() -> List[Assistant]:
-    return get_assistants("pr_1234")
-
-
-def list_conversations(project_name):
-    project_id = get_project_from_name(project_name).id
-    return get_conversations(project_id)
-
-
-def get_project_from_name(project_name: str) -> Project:
-    return next(p for p in list_projects() if p.name == project_name)
-
-
-def get_assistant_from_name(assistant_name: str) -> Assistant | None:
-    for a in list_assistants():
-        if a.name == assistant_name:
-            return a
-
-
-def get_conversation_from_name(conv_name: str, project_name: str) -> Conversation:
-    return next(c for c in list_conversations(project_name) if c.name == conv_name)
-
-
-def create_conversation(name, project, assistant):
-    new_conversation(
-        name=name,
-        assistant=get_assistant_from_name(assistant),
-        project=get_project_from_name(project),
-    )
 
 def render_conversation():
     for message in st.session_state.conversation:
@@ -64,10 +31,9 @@ def init_logger() -> logging.Logger:
     return get_logger()
 
 def main():
-    logger = init_logger()
-    logger.debug("Logger initialized")
-    
     st.set_page_config(page_title="Majordomo")
+    logger = init_logger()
+
     if "conversation" not in st.session_state:
         st.session_state.conversation = []
 
@@ -92,7 +58,8 @@ def main():
         prompt_area = st.container()
         with header:
             proj_col, conv_col, add_col = st.columns([0.4, 0.3, 0.2])
-            projects = list_projects()
+            # TODO: use active project to pre-select in the selectbox
+            _, projects = list_projects()
             assistants = list_assistants()
             with proj_col:
                 active_project = st.selectbox("Project", [p.name for p in projects])
@@ -126,9 +93,8 @@ def main():
                     st.session_state.conversation.append({"USER": prompt})
                     try:
                         with st.spinner("Asking Majordomo..."):
-
-                            sleep(2)
-                            st.session_state.conversation.append({"ASSISTANT": "This is a mock response."})
+                            response = ask_assistant(prompt, conv.id, conv.assistant)
+                            st.session_state.conversation.append({"ASSISTANT": response})
                     except Exception as e:
                         st.error(f"An error occurred: {str(e)}")
     elif selected == "About":
