@@ -1,3 +1,5 @@
+import logging
+import sys
 from time import sleep
 from typing import Tuple, List
 
@@ -9,6 +11,7 @@ from majordomo.api import (
     get_assistants,
     get_conversations, Project, Assistant, new_conversation, Conversation,
 )
+from utils import setup_logger, get_logger
 
 
 @st.cache_data
@@ -53,7 +56,17 @@ def render_conversation():
             with st.chat_message(role):
                 st.write(text)
 
+# Initialize logger
+@st.cache_resource
+def init_logger() -> logging.Logger:
+    log_level = logging.DEBUG if len(sys.argv) == 2 and sys.argv[1] == "debug" else logging.INFO
+    setup_logger(log_level)
+    return get_logger()
+
 def main():
+    logger = init_logger()
+    logger.debug("Logger initialized")
+    
     st.set_page_config(page_title="Majordomo")
     if "conversation" not in st.session_state:
         st.session_state.conversation = []
