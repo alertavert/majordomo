@@ -1,67 +1,81 @@
 # Majordomo - Code generation Bot
-*Created by M. Massenzio &copy; 2023 AlertAvert.com All Rights Reserved*
+*Created by M. Massenzio &copy; 2023-2025 AlertAvert.com All Rights Reserved*
 
 [![Go](https://github.com/alertavert/majordomo/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/alertavert/majordomo/actions/workflows/test.yml)
 
-# Build & run Server
+![Bots, bots everywhere](docs/images/team-of-robots.jpeg)
+
+# Majordomo API
+
+## Build & run Server
 
 `make help` shows all the available commands.
 
 `make build` and `make test` do what one expects they would, the server is built in the `build/bin` folder, and tagged with the current `version` (derived from the `settings.yaml` and the current git SHA).
 
-The server itself can be run in `dev` mode via `make run` and is reachable at `http://localhost:5000`; the `UI` is served off the `/web` endpoint.
+Run a development instance using `make dev`, the server is available at `http://localhost:5000`.
+
+## Docker & Kubernetes
+
+The container can be created with `make container` the image name and version are determined automatically (the version will match what is in [`settings.yaml`](settings.yaml)), something like:
+
+    alertavert/majordomo:0.6.1
+
+and can be run via the `make start` command.
+
+To deploy the container to a Kind cluster running locally, run the following commands:
+
+```shell
+kind create cluster --name dev
+kind --name=dev load docker-image alertavert/majordomo:0.6.1
+kubectl create ns majo
+kubectl create -n majo configmap majordomo-config --from-file=$HOME/.majordomo/config.yaml
+kubectl apply -f deploy.yaml
+```
+
+The service is then accessible from within the cluster at:
+
+    http://majordomo-service.majo.svc.cluster.local
 
 ## API
 
 `TODO`
 
+These are currently the endpoints:
+
+```
+GET    /health
+POST   /command
+POST   /parse
+POST   /prompt
+GET    /projects
+GET    /projects/:project_name
+GET    /projects/:project_name/sessions
+POST   /projects
+PUT    /projects
+PUT    /projects/:project_name
+DELETE /projects/:project_name
+GET    /assistants
+```
+
+Load [the Postman collection](docs/Majordomo.postman_collection.json) into [Postman]() to see example API calls and the format of the JSON body.
+
 ## OpenAI Interface
+
+`TODO`
 
 ## Backend Architecture
 
-# App UI
+`TODO`
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# Majordomo UI
 
-This is what it currently looks like (May 2024):
+The web app is created using [Streamlit](https://streamlit.io) and is in the [`webapp`](webapp) folder.
 
-![Majordomo](./docs/images/majordomo.png)
+<img src="docs/images/streamlit.png" alt="Streamlit UI" height="500px">
 
-You will need `npm` to run all this, on MacOS it's just a matter of `brew install npm` and on Linux `sudo apt install npm` should work - although, with this junk, it's always a coin toss.
+and can be run using:
 
-## Available Scripts
+    streamlit run webapp/app.py debug
 
-### Development
-
-To install the necessary modules run:
-
-```shell
-make ui-setup
-```
-
-
-A `dev` version (which reloads when any of the Javascript files in the `ui/app/src` folder are modified) can be run with:
-
-```
-make ui-dev
-```
-and is served off `http://localhost:3000` (we use `CORS` to allow it to connect to the backend Gin server running on port `5000`).
-
-The page will reload when you make changes.
-You may also see any lint errors in the console.
-
-### Distribution
-
-The React App can be built via `make ui` (which will install a `webpack` minified distribution in the `build/ui` folder of the project.
-
-The build is minified and the filenames include the hashes.
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-`TODO: update the following -- there are currently no tests on the UI`
-
-### `npm test`
-
-Launches the test runner in the interactive watch mode.
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+`streamlit` needs to be installed in a virtualenv using `pip install streamlit`.

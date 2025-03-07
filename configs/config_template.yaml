@@ -18,6 +18,3 @@ projects:
     - name: Chalk
       description: Backstage integration
       location: $HOME/Development/Playgrounds/chalk-dev
-
-pinecone:
-    api_key: "9889abcdef-defa-5dac-1234-123456789012"
