@@ -1,0 +1,47 @@
+# Copyright (c) 2025 AlertAvert.com  All rights reserved.
+# Created by M. Massenzio
+#
+# Majordomo service running in Kubernetes.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: majordomo
+  namespace: majo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: majordomo-api
+  template:
+    metadata:
+      labels:
+        app: majordomo-api
+    spec:
+      containers:
+        - name: majordomo
+          image: alertavert/majordomo:0.6.1
+          ports:
+            - containerPort: 5000
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/majordomo
+              readOnly: true
+      volumes:
+        - name: config-volume
+          configMap:
+            name: majordomo-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: majordomo-service
+  namespace: majo
+spec:
+  selector:
+    app: majordomo-api
+  ports:
+    - protocol: TCP
+      port: 80      # Exposed port
+      targetPort: 5000  # Container port
+  type: ClusterIP
