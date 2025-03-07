@@ -5,6 +5,13 @@
 
 ![Bots, bots everywhere](docs/images/team-of-robots.jpeg)
 
+# Overview
+
+This project uses OpenAI Assistants to provide a locally-running code assistant, with access to project files, and allows the Assistant to modify the files and return the modified version in a pre-defined location; we don't overwrite directly the original source files because, well, hallucinations.
+
+The project is described in [Using OpenAI GPT to build a Coding Assistant that uses OpenAI GPT to build apps (including itself)](https://codetrips.com/2023/11/19/using-openai-gpt-to-build-a-coding-assistant-that-uses-openai-gpt-to-build-apps-including-itself/).
+
+
 # Majordomo API
 
 ## Build & run Server
