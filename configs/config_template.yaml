@@ -28,6 +28,15 @@ model: gpt-4o-mini
 # and if that is not set, we default to $HOME/.majordomo/code
 code_snippets: .majordomo/code
 
+# Path to the instructions for the LLM
+# TODO: this should not be actually used.
+assistants: $HOME/.majordomo/data/instructions.yaml
+
+# Thread store on-disk
+# This is a temporary solution, until we have a proper database
+# for storing threads (most likely, Redis).
+threads_location: /tmp/threads
+
 # Active project at startup (should be saved every time it's changed in UI)
 active_project: Majordomo
 # List of projects for the Assistants.

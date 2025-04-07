@@ -73,13 +73,20 @@ func NewMajordomo(cfg *config.Config) (*Majordomo, error) {
 	assistant.CodeStore = *preprocessors.GetCodeStoreHandler(p)
 	assistant.Config = cfg
 	assistant.Threads = threads.NewThreadStore(cfg)
+	if assistant.Threads == nil {
+		return nil, fmt.Errorf("error initializing thread store")
+	}
 
 	log.Debug().
 		Str("model", assistant.Model).
+		Str("configured_snippets", cfg.CodeSnippetsDir).
+		Str("threads_location", cfg.ThreadsLocation).
+		Msg("Majordomo assistant initialized")
+	log.Debug().
 		Str("active_project", p.Name).
 		Str("source_dir", p.Location).
 		Str("code_snippets", p.ResolvedCodeSnippetsDir).
-		Msg("Majordomo assistant initialized")
+		Msg("Active Project set")
 	return assistant, nil
 }
 

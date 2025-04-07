@@ -13,9 +13,9 @@ import (
 // The ID is used to retrieve the Thread from the OpenAI API; while the name is
 // used to display the Thread in the UI.
 type Thread struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-	Assistant string `json:"assistant"`
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Assistant   string `json:"assistant"`
 	Description string `json:"description"`
 }
 
@@ -25,18 +25,21 @@ type ThreadsMap map[string][]Thread
 
 // ThreadStore encapsulates behavior for managing and persisting threads.
 type ThreadStore struct {
-	location  string
+	location   string
 	threadsMap ThreadsMap
 	mu         sync.Mutex
 }
 
 // NewThreadStore creates a new ThreadStore instance using the provided configuration.
 func NewThreadStore(cfg *config.Config) *ThreadStore {
+	if cfg.ThreadsLocation == "" {
+		log.Error().Msg("Threads location not configured")
+		return nil
+	}
 	ts := &ThreadStore{
 		threadsMap: make(ThreadsMap),
-		location:     cfg.ThreadsLocation,
+		location:   cfg.ThreadsLocation,
 	}
-
 	if err := ts.load(); err != nil {
 		log.Error().
 			Err(err).
@@ -44,6 +47,10 @@ func NewThreadStore(cfg *config.Config) *ThreadStore {
 			Msg("Error loading threads")
 		return nil
 	}
+	log.Info().
+		Str("location", ts.location).
+		Int("threads", len(ts.threadsMap)).
+		Msg("Loaded thread store from disk")
 	return ts
 }
 

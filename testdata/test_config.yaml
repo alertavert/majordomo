@@ -2,6 +2,7 @@
 api_key: test-key
 assistants: test/assistants.yaml
 code_snippets: .majordomo
+threads_location: /tmp/threads
 
 projects:
   - name: test-project

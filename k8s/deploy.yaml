@@ -12,11 +12,11 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: majordomo-api
+      app.kubernetes.io/name: majordomo-api
   template:
     metadata:
       labels:
-        app: majordomo-api
+        app.kubernetes.io/name: majordomo-api
     spec:
       containers:
         - name: majordomo
@@ -39,7 +39,7 @@ metadata:
   namespace: majo
 spec:
   selector:
-    app: majordomo-api
+    app.kubernetes.io/name: majordomo-api
   ports:
     - protocol: TCP
       port: 80      # Exposed port
