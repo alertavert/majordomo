@@ -1,20 +1,45 @@
+# Majordomo configuration file (c) 2025 AlertAvert.com
 # Created M. Massenzio, 2024-05-27
 #
 # Sample Configuration file for Majordomo
+#
+# Its location can be configured via the `MAJORDOMO_CONFIG` environment variable,
+# or by passing the `--config` flag to the Majordomo CLI.
+# If neither is provided, the default location is `~/.majordomo/config.yaml`.
 
+# OpenAI API Key
+# Replace with yours, and do not share or commit to repository the real one
 api_key: "sk-1234567890abcdef1234567890abcdef"
+
+# Project ID for the OpenAI API - consider it
+# a confidential piece of information, do not share.
 project_id: "proj_1234567890abcdef1234567890abcdef"
 
-assistants: $HOME/.majordomo/data/instructions.yaml
-code_snippets: $HOME/.majordomo/data/code
-model: gpt-4o
+# OpenAI Model
+model: gpt-4o-mini
 
+# Folder for generated code.
+#
+# Either absolute, or relative: if the latter,
+# it is considered relative to the project's location.
+# Can be overridden in the project's configuration.
+#
+# If not specified here, we try to use the MAJORDOMO_CODE environment variable,
+# and if that is not set, we default to $HOME/.majordomo/code
+code_snippets: .majordomo/code
+
+# Active project at startup (should be saved every time it's changed in UI)
 active_project: Majordomo
+# List of projects for the Assistants.
 projects:
     - name: Majordomo
+      description: AI Agent for coding assistance
       location: $HOME/Development/AlertAvert/majordomo
     - name: common-utils
+      description: Shell scripting utilities
       location: $HOME/Development/common-utils
     - name: Chalk
       description: Backstage integration
+      # Example of a project with a different code_snippets location
+      code_snippets: /usr/share/chalk/majordomo
       location: $HOME/Development/Playgrounds/chalk-dev

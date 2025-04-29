@@ -1,6 +1,16 @@
 # Copyright (c) 2023-2024 AlertAvert.com. All rights reserved.
 # Author: Marco Massenzio (marco@alertavert.com)
 
+###### NOT IMPLEMENTED -- THIS IS NOT REALLY SUPPORTED YET ######
+#
+# Assistants are currently managed via OpenAI API, and we
+# do not yet support creating them either via API or UI.
+# The ones currently used have been manually created via OpenAI's
+# web interface.
+#
+# See Issue #18 for more details.
+######
+
 common: |
   You are Majordomo, a coding assistant for an experienced developer and only 
   send back the code, no explanation necessary. 
