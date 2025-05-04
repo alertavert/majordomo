@@ -1,4 +1,4 @@
-package threads
+package conversations
 
 import (
 	"encoding/json"
@@ -20,10 +20,9 @@ type Thread struct {
 }
 
 // ThreadsMap is a map of Project names to their respective Threads.
-// TODO: Will need to eventually store the Threads (per Project) in persistent storage.
 type ThreadsMap map[string][]Thread
 
-// ThreadStore encapsulates behavior for managing and persisting threads.
+// ThreadStore encapsulates behavior for managing and persisting conversations.
 type ThreadStore struct {
 	location   string
 	threadsMap ThreadsMap
@@ -44,12 +43,12 @@ func NewThreadStore(cfg *config.Config) *ThreadStore {
 		log.Error().
 			Err(err).
 			Str("location", ts.location).
-			Msg("Error loading threads")
+			Msg("Error loading conversations")
 		return nil
 	}
 	log.Info().
 		Str("location", ts.location).
-		Int("threads", len(ts.threadsMap)).
+		Int("conversations", len(ts.threadsMap)).
 		Msg("Loaded thread store from disk")
 	return ts
 }
@@ -62,13 +61,45 @@ func (ts *ThreadStore) AddThread(projectName string, thread Thread) error {
 	return ts.save()
 }
 
-func (ts *ThreadStore) GetThreads(projectName string) []Thread {
+func (ts *ThreadStore) GetAllThreads(projectName string) []Thread {
 	ts.mu.Lock()
 	defer ts.mu.Unlock()
 	return ts.threadsMap[projectName]
 }
 
-// load retrieves the threads data from the disk.
+// GetThread retrieves a specific thread from a project by its ID.
+// Returns the thread and true if found, or an empty thread and false if not found.
+func (ts *ThreadStore) GetThread(projectName string, threadID string) (Thread, bool) {
+	ts.mu.Lock()
+	defer ts.mu.Unlock()
+
+	threads := ts.threadsMap[projectName]
+	for _, thread := range threads {
+		if thread.ID == threadID {
+			return thread, true
+		}
+	}
+	return Thread{}, false
+}
+
+// RemoveThread removes a specific thread from a project.
+// Returns true if the thread was found and removed, false otherwise.
+func (ts *ThreadStore) RemoveThread(projectName string, threadID string) (bool, error) {
+	ts.mu.Lock()
+	defer ts.mu.Unlock()
+
+	threads := ts.threadsMap[projectName]
+	for i, thread := range threads {
+		if thread.ID == threadID {
+			// Remove the thread by slicing
+			ts.threadsMap[projectName] = append(threads[:i], threads[i+1:]...)
+			return true, ts.save()
+		}
+	}
+	return false, nil
+}
+
+// load retrieves the conversations data from the disk.
 func (ts *ThreadStore) load() error {
 	ts.mu.Lock()
 	defer ts.mu.Unlock()
@@ -79,29 +110,35 @@ func (ts *ThreadStore) load() error {
 			ts.threadsMap = make(ThreadsMap)
 			return nil
 		}
+		log.Error().Err(err).
+			Str("location", ts.location).
+			Msg("Error opening conversations file")
 		return err
 	}
 	defer func() {
 		if err := file.Close(); err != nil {
 			log.Error().Err(err).
 				Str("location", ts.location).
-				Msg("Error opening threads file")
+				Msg("Error occurred while closing conversations file")
 		}
 	}()
 	return json.NewDecoder(file).Decode(&ts.threadsMap)
 }
 
-// save persists the current state of the threads map to the disk.
+// save persists the current state of the conversations map to the disk.
 func (ts *ThreadStore) save() error {
 	file, err := os.Create(ts.location)
 	if err != nil {
+		log.Error().Err(err).
+			Str("location", ts.location).
+			Msg("Error while saving conversations")
 		return err
 	}
 	defer func() {
 		if err := file.Close(); err != nil {
 			log.Error().Err(err).
 				Str("location", ts.location).
-				Msg("Error saving threads file")
+				Msg("Error while closing saved conversations file")
 		}
 	}()
 	return json.NewEncoder(file).Encode(ts.threadsMap)

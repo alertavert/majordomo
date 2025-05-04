@@ -50,7 +50,7 @@ type Config struct {
 	// TODO: not supported yet (see #18)
 	AssistantsLocation string `yaml:"assistants"`
 
-	// ThreadsLocation is the path to the directory where the threads are stored.
+	// ThreadsLocation is the path to the directory where the conversations are stored.
 	ThreadsLocation string `yaml:"threads_location"`
 
 	// CodeSnippetsDir is the name of the directory, inside each respective

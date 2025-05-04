@@ -10,7 +10,7 @@ import (
 
 	"github.com/alertavert/gpt4-go/pkg/completions"
 	"github.com/alertavert/gpt4-go/pkg/config"
-	"github.com/alertavert/gpt4-go/pkg/threads"
+	"github.com/alertavert/gpt4-go/pkg/conversations"
 )
 
 type ProjectResponse struct {
@@ -199,14 +199,14 @@ func getSessionsForProjectHandler(m *completions.Majordomo) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		projectName := c.Param("project_name")
 		for _, p := range m.Config.Projects {
-			var ths = m.Threads.GetThreads(p.Name)
+			var ths = m.Threads.GetAllThreads(p.Name)
 			if ths == nil {
-				ths = []threads.Thread{}
+				ths = []conversations.Thread{}
 			}
 			if p.Name == projectName {
 				c.JSON(http.StatusOK, gin.H{
-					"project": p.Name,
-					"threads": ths,
+					"project":       p.Name,
+					"conversations": ths,
 				})
 				return
 			}

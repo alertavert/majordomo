@@ -34,8 +34,8 @@ assistants: $HOME/.majordomo/data/instructions.yaml
 
 # Thread store on-disk
 # This is a temporary solution, until we have a proper database
-# for storing threads (most likely, Redis).
-threads_location: /tmp/threads
+# for storing conversations (most likely, Redis).
+threads_location: /tmp/conversations
 
 # Active project at startup (should be saved every time it's changed in UI)
 active_project: Majordomo
