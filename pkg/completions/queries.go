@@ -6,8 +6,10 @@ package completions
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"github.com/alertavert/gpt4-go/pkg/threads"
+	"github.com/alertavert/gpt4-go/pkg/conversations"
+	"github.com/go-playground/validator/v10"
 	"mime/multipart"
 	"time"
 
@@ -26,12 +28,28 @@ const (
 type PromptRequest struct {
 	// The assistant to use (selected by the user).
 	// TODO: this should be set at ThreadId creation time.
-	Assistant string `json:"assistant"`
+	Assistant string `json:"assistant" validate:"required"`
 	// The Thread ID (if any) to keep track of past prompts/responses in the conversation.
 	// If empty, a new conversation is started.
 	ThreadId string `json:"thread_id,omitempty"`
 	// The user prompt.
-	Prompt string `json:"prompt"`
+	Prompt string `json:"prompt" validate:"required"`
+}
+
+// Validate checks if the PromptRequest has all required fields, using the validator package.
+func (pr *PromptRequest) Validate() error {
+	validate := validator.New()
+	if err := validate.Struct(pr); err != nil {
+		// Convert validator errors to friendly messages
+		var validationErrors validator.ValidationErrors
+		if errors.As(err, &validationErrors) {
+			for _, e := range validationErrors {
+				return fmt.Errorf("%s field is required", e.Field())
+			}
+		}
+		return err
+	}
+	return nil
 }
 
 type Majordomo struct {
@@ -42,7 +60,7 @@ type Majordomo struct {
 	CodeStore preprocessors.CodeStoreHandler
 
 	// Threads of conversation with the LLM model.
-	Threads *threads.ThreadStore
+	Threads *conversations.ThreadStore
 
 	// The Model to use
 	Model string
@@ -72,14 +90,21 @@ func NewMajordomo(cfg *config.Config) (*Majordomo, error) {
 	}
 	assistant.CodeStore = *preprocessors.GetCodeStoreHandler(p)
 	assistant.Config = cfg
-	assistant.Threads = threads.NewThreadStore(cfg)
+	assistant.Threads = conversations.NewThreadStore(cfg)
+	if assistant.Threads == nil {
+		return nil, fmt.Errorf("error initializing thread store")
+	}
 
 	log.Debug().
 		Str("model", assistant.Model).
+		Str("configured_snippets", cfg.CodeSnippetsDir).
+		Str("threads_location", cfg.ThreadsLocation).
+		Msg("Majordomo assistant initialized")
+	log.Debug().
 		Str("active_project", p.Name).
 		Str("source_dir", p.Location).
 		Str("code_snippets", p.ResolvedCodeSnippetsDir).
-		Msg("Majordomo assistant initialized")
+		Msg("Active Project set")
 	return assistant, nil
 }
 
@@ -133,7 +158,7 @@ func (m *Majordomo) CreateNewThread(project, assistant string) string {
 		log.Err(err).Msg("error creating thread")
 		return ""
 	}
-	var newThread = threads.Thread{
+	var newThread = conversations.Thread{
 		ID:          t.ID,
 		Name:        "temp thread",
 		Assistant:   assistant,

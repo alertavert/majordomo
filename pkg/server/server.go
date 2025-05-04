@@ -60,8 +60,12 @@ func (s *Server) setupHandlers() {
 	r.PUT("/projects/:project_name", projectPutHandler(cfg))
 	r.DELETE("/projects/:project_name", projectDeleteHandler(cfg))
 
-	// Names management routes
+	// Assistants routes
 	r.GET("/assistants", assistantsGetHandler(s.assistant))
+
+	// Conversations routes
+	r.GET("/conversations", threadsGetHandler(s.assistant))
+	r.GET("/conversations/:thread_id", threadGetByIdHandler(s.assistant))
 }
 
 // SetupTestRoutes is a helper function to set up the routes for testing.

@@ -9,6 +9,7 @@ import (
 	"github.com/alertavert/gpt4-go/pkg/preprocessors"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/rs/zerolog"
 	"os"
 	"path/filepath"
 	"testing"
@@ -22,6 +23,11 @@ func TestParser(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Pre-Processors Test Suite")
 }
+
+var _ = BeforeSuite(func() {
+	// Silence the logs
+	zerolog.SetGlobalLevel(zerolog.Disabled)
+})
 
 // SetupTestFiles creates two randomly named directories and copies files from `TestdataDir`
 // folder and its sub-folders into the first of them.

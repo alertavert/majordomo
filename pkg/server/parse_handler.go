@@ -5,6 +5,7 @@
 package server
 
 import (
+	"fmt"
 	"github.com/alertavert/gpt4-go/pkg/completions"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -15,22 +16,30 @@ import (
 func parsePromptHandler(m *completions.Majordomo) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		var requestBody completions.PromptRequest
-		err := c.ShouldBindJSON(&requestBody)
-		if err != nil {
+		if err := c.ShouldBindJSON(&requestBody); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"response": "error",
-				"message":  err.Error(),
+				"message":  "Invalid JSON format: " + err.Error(),
 			})
 			return
 		}
-		err = m.PreparePrompt(&requestBody)
-		if err != nil {
+
+		// Validate required fields
+		if err := requestBody.Validate(); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"response": "error",
+				"message":  fmt.Sprintf("Request has missing fields: %s", err.Error()),
+			})
+			return
+		}
+		if err := m.PreparePrompt(&requestBody); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"response": "error",
 				"message":  err.Error(),
 			})
 			return
 		}
+
 		c.JSON(http.StatusOK, gin.H{
 			"response": "success",
 			"message":  requestBody.Prompt,
