@@ -57,6 +57,7 @@ func NewThreadStore(cfg *config.Config) *ThreadStore {
 func (ts *ThreadStore) AddThread(projectName string, thread Thread) error {
 	ts.mu.Lock()
 	defer ts.mu.Unlock()
+	// TODO: do we need to check first if the key exists in the map?
 	ts.threadsMap[projectName] = append(ts.threadsMap[projectName], thread)
 	return ts.save()
 }
