@@ -158,6 +158,7 @@ func (m *Majordomo) CreateNewThread(project, assistant string) string {
 		log.Err(err).Msg("error creating thread")
 		return ""
 	}
+	// TODO: we need to ask the LLM for a name and description.
 	var newThread = conversations.Thread{
 		ID:          t.ID,
 		Name:        "temp thread",
@@ -185,9 +186,15 @@ func (m *Majordomo) QueryBot(prompt *PromptRequest) (string, error) {
 	// TODO: create an appropriate context for the query.
 	// Create a new conversation if the thread ID is empty.
 	if prompt.ThreadId == "" {
+		log.Debug().
+			Str("assistant", prompt.Assistant).
+			Msg("creating new thread")
 		prompt.ThreadId = m.CreateNewThread(m.Config.ActiveProject, prompt.Assistant)
 	}
-
+	log.Debug().
+		Str("thread_id", prompt.ThreadId).
+		Str("assistant", prompt.Assistant).
+		Msg("thread ID set")
 	// Creates a new conversation in the thread.
 	msg, err := m.Client.CreateMessage(context.Background(), prompt.ThreadId,
 		openai.MessageRequest{

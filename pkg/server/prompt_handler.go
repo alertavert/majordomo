@@ -16,6 +16,7 @@ func promptHandler(m *completions.Majordomo) func(c *gin.Context) {
 		var requestBody completions.PromptRequest
 		err := c.ShouldBindJSON(&requestBody)
 		if err != nil {
+			log.Error().Err(err).Msg("Cannot parse request body")
 			c.JSON(http.StatusBadRequest, gin.H{
 				"status":  "error",
 				"message": err.Error(),
@@ -29,6 +30,14 @@ func promptHandler(m *completions.Majordomo) func(c *gin.Context) {
 			})
 			return
 		}
+		lm := log.Debug().
+			Str("assistant_name", requestBody.Assistant)
+		var hasThreadId bool = false
+		if requestBody.ThreadId != "" {
+			hasThreadId = true
+			lm.Str("thread_id", requestBody.ThreadId)
+		}
+		lm.Msg("Sending prompt to LLM")
 		botResponse, err := m.QueryBot(&requestBody)
 		if err != nil {
 			log.Error().Err(err).Msg("Error querying bot")
@@ -38,7 +47,11 @@ func promptHandler(m *completions.Majordomo) func(c *gin.Context) {
 			})
 			return
 		}
-		log.Debug().Msg("returning response")
+		if !hasThreadId && requestBody.ThreadId != "" {
+			log.Debug().
+				Str("thread_id", requestBody.ThreadId).
+				Msg("New thread created")
+		}
 		c.JSON(http.StatusOK, gin.H{
 			"status":    "success",
 			"message":   botResponse,
