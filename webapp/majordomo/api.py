@@ -30,8 +30,7 @@ class Project:
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> "Project":
         return Project(
-            name=data.get("name"),
-            description=data.get("description"),
+            name=data.get("name"), description=data.get("description"),
             location=Path(data.get("location"))
         )
 
@@ -46,27 +45,25 @@ class Assistant:
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> "Assistant":
         return Assistant(
-            id=data.get("id"),
-            name=data.get("name"),
-            model=data.get("model"),
+            id=data.get("id"), name=data.get("name"), model=data.get("model"),
             instructions=data.get("instructions")
         )
 
 
 @dataclass
 class Conversation:
-    id: str
-    name: str
+    id: str | None
+    title: str
     assistant: str
-    project: str
+    messages: List[Dict[str, str]]
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> "Conversation":
         return Conversation(
             id=data.get("id"),
-            name=data.get("name"),
+            title=data.get("name"),
             assistant=data.get("assistant"),
-            project=data.get("project")
+            messages=[]
         )
 
 
@@ -117,50 +114,28 @@ def get_conversations(project_id: str) -> Union[List[Conversation], ResponseErro
         return ResponseError(title="API Error", message=response.text)
     try:
         data = response.json()
-        conversations = [Conversation.from_dict(item) for item in data.get("threads")]
+        conversations = [Conversation.from_dict(item) for item in data.get("conversations", [])]
         return conversations
     except Exception as e:
-        return ResponseError(title="Decoding Error", message=str(e))
+        return ResponseError(title="Decoding Error in Conversations",
+                             message=f"Cannot decode server response for conversations for "
+                                     f"project {project_id}: {e}")
 
 
-def get_conversations_cache() -> dict[str, List[Conversation]]:
-    """Get the conversations cache."""
-    if "conversations" not in st.session_state:
-        st.session_state.conversations = {}
-    return st.session_state.conversations
-
-
-def new_conversation(
-        assistant: Assistant,
-        project: Project,
-        name: str = "New Conversation",
-) -> Conversation:
-    """Create a new conversation."""
-    conversations = get_conversations_cache()
-    for convs in conversations.values():
-        print(f"---  {[conv.name for conv in convs]}")
-    conversation = Conversation(id="1", name=name, assistant=assistant.name, project=project.name)
-    if project.name not in conversations:
-        conversations[project.name] = []
-    conversations[project.name].append(conversation)
-    return conversation
-
-
-def ask_assistant(prompt: str, thread_id: str, assistant: str) -> Union[Dict[str, Any], ResponseError]:
+def ask_assistant(prompt: str, assistant: str, thread_id: Union[str, None] = None) -> Union[
+    Dict[str, Any], ResponseError]:
     """
     Send a prompt to the assistant via POST '/prompt' and return the API response.
 
     :param prompt: The input prompt text.
-    :param thread_id: The thread ID associated with the conversation.
-    :param assistant: The name of the assistant.
+    :param assistant: The name of the assistant to use.
+    :param thread_id: The thread ID associated with the conversation, optional
     :return: Dictionary with API response or a ResponseError.
     """
     url = f"{BASE_URL}/prompt"
-    payload = {
-        "prompt": prompt,
-        "thread_id": thread_id,
-        "assistant": assistant
-    }
+    payload = {"prompt": prompt, "assistant": assistant}
+    if thread_id:
+        payload["thread_id"] = thread_id
     try:
         response = requests.post(url, json=payload)
     except requests.RequestException as e:
@@ -171,6 +146,6 @@ def ask_assistant(prompt: str, thread_id: str, assistant: str) -> Union[Dict[str
         resp = response.json()
         if resp.get("status") != "success":
             return ResponseError(title="Assistant Error", message=resp.get("message"))
-        return resp.get("message")
+        return resp
     except Exception as e:
         return ResponseError(title="Decoding Error", message=str(e))
