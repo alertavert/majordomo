@@ -53,50 +53,6 @@ var _ = Describe("/conversations endpoint", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	Describe("GET /conversations", func() {
-		Context("With valid project parameter", func() {
-			It("should return all threads for the project", func() {
-				req, _ := http.NewRequest("GET", fmt.Sprintf("/conversations?project=%s", projectName), nil)
-				resp := httptest.NewRecorder()
-
-				router.ServeHTTP(resp, req)
-				Expect(resp.Code).To(Equal(http.StatusOK))
-				Expect(resp.Body.String()).To(ContainSubstring(testThread.ID))
-				Expect(resp.Body.String()).To(ContainSubstring(testThread.Name))
-			})
-
-			It("should return empty array when project has no threads", func() {
-				emptyProject := cfg.Projects[1].Name
-				req, _ := http.NewRequest("GET", fmt.Sprintf("/conversations?project=%s", emptyProject), nil)
-				resp := httptest.NewRecorder()
-
-				router.ServeHTTP(resp, req)
-				Expect(resp.Code).To(Equal(http.StatusOK))
-				Expect(resp.Body.String()).To(ContainSubstring(`"threads":[]`))
-			})
-		})
-
-		Context("With invalid project parameter", func() {
-			It("should return 400 when project parameter is missing", func() {
-				req, _ := http.NewRequest("GET", "/conversations", nil)
-				resp := httptest.NewRecorder()
-
-				router.ServeHTTP(resp, req)
-				Expect(resp.Code).To(Equal(http.StatusBadRequest))
-				Expect(resp.Body.String()).To(ContainSubstring("project query parameter is required"))
-			})
-
-			It("should return 404 when project doesn't exist", func() {
-				req, _ := http.NewRequest("GET", "/conversations?project=nonexistent", nil)
-				resp := httptest.NewRecorder()
-
-				router.ServeHTTP(resp, req)
-				Expect(resp.Code).To(Equal(http.StatusNotFound))
-				Expect(resp.Body.String()).To(ContainSubstring("project 'nonexistent' not found"))
-			})
-		})
-	})
-
 	Describe("GET /conversations/:thread_id", func() {
 		Context("With valid parameters", func() {
 			It("should return the specific thread", func() {

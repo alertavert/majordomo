@@ -54,7 +54,7 @@ func (s *Server) setupHandlers() {
 	cfg := s.assistant.Config
 	r.GET("/projects", projectsGetHandler(cfg))
 	r.GET("/projects/:project_name", projectDetailsGetHandler(cfg))
-	r.GET("/projects/:project_name/sessions", getSessionsForProjectHandler(s.assistant))
+	r.GET("/projects/:project_name/conversations", getConversationsForProjectHandler(s.assistant))
 	r.POST("/projects", projectPostHandler(cfg))
 	r.PUT("/projects", updateActiveProject(s.assistant))
 	r.PUT("/projects/:project_name", projectPutHandler(cfg))
@@ -64,7 +64,6 @@ func (s *Server) setupHandlers() {
 	r.GET("/assistants", assistantsGetHandler(s.assistant))
 
 	// Conversations routes
-	r.GET("/conversations", threadsGetHandler(s.assistant))
 	r.GET("/conversations/:thread_id", threadGetByIdHandler(s.assistant))
 }
 
