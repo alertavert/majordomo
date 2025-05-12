@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"github.com/alertavert/gpt4-go/pkg/conversations"
 	"net/http"
 	"strings"
 
@@ -10,7 +11,6 @@ import (
 
 	"github.com/alertavert/gpt4-go/pkg/completions"
 	"github.com/alertavert/gpt4-go/pkg/config"
-	"github.com/alertavert/gpt4-go/pkg/conversations"
 )
 
 type ProjectResponse struct {
@@ -195,22 +195,22 @@ func projectDeleteHandler(cfg *config.Config) gin.HandlerFunc {
 	}
 }
 
-func getSessionsForProjectHandler(m *completions.Majordomo) gin.HandlerFunc {
+func getConversationsForProjectHandler(m *completions.Majordomo) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		projectName := c.Param("project_name")
-		for _, p := range m.Config.Projects {
-			var ths = m.Threads.GetAllThreads(p.Name)
-			if ths == nil {
-				ths = []conversations.Thread{}
-			}
-			if p.Name == projectName {
-				c.JSON(http.StatusOK, gin.H{
-					"project":       p.Name,
-					"conversations": ths,
-				})
-				return
-			}
+		// Check if project exists
+		project := m.Config.GetProject(projectName)
+		if project == nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": fmt.Sprintf("project '%s' not found", projectName)})
+			return
 		}
-		c.JSON(http.StatusNotFound, gin.H{"error": fmt.Sprintf("Project `%s` not found", projectName)})
+		threads := m.Threads.GetAllThreads(projectName)
+		if threads == nil {
+			threads = []conversations.Thread{}
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"project": projectName,
+			"threads": threads,
+		})
 	}
 }

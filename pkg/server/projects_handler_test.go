@@ -1,17 +1,19 @@
 package server_test
 
 import (
+	"encoding/json"
 	"github.com/alertavert/gpt4-go/pkg/completions"
 	"github.com/alertavert/gpt4-go/pkg/config"
+	"github.com/alertavert/gpt4-go/pkg/conversations"
 	"github.com/alertavert/gpt4-go/pkg/server"
 	"github.com/gin-gonic/gin"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"net/http"
 	"net/http/httptest"
+	os "os"
 	"strings"
 )
-
 
 var _ = Describe("/projects endpoint", func() {
 	var (
@@ -27,6 +29,14 @@ var _ = Describe("/projects endpoint", func() {
 		// Load configuration
 		cfg, err = config.LoadConfig(cfgLoc)
 		Expect(err).NotTo(HaveOccurred())
+		// Create a temporary file for threads storage
+		tmpFile, err := os.CreateTemp("", "threads-*.json")
+		Expect(err).NotTo(HaveOccurred())
+		cfg.ThreadsLocation = tmpFile.Name()
+		Ω(tmpFile.Close()).ShouldNot(HaveOccurred())
+		// The test doesn't need to save the conversations, so
+		// we immediately remove the file, to avoid an EOF error.
+		Ω(os.Remove(tmpFile.Name())).Should(Succeed())
 
 		// Create a new Majordomo instance
 		assistant, err = completions.NewMajordomo(cfg)
@@ -203,6 +213,74 @@ var _ = Describe("/projects endpoint", func() {
 
 				router.ServeHTTP(resp, req)
 				Expect(resp.Code).To(Equal(http.StatusNotFound))
+			})
+		})
+	})
+
+	Describe("GET /projects/:project_name/conversations", func() {
+		Context("with an existing project", func() {
+			It("should return empty threads list when no conversations exist", func() {
+				project := cfg.Projects[0]
+				req, _ := http.NewRequest("GET", "/projects/"+project.Name+"/conversations", nil)
+				resp := httptest.NewRecorder()
+
+				router.ServeHTTP(resp, req)
+				Expect(resp.Code).To(Equal(http.StatusOK))
+
+				var response map[string]interface{}
+				err := json.NewDecoder(resp.Body).Decode(&response)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(response["project"]).To(Equal(project.Name))
+				Expect(response["threads"]).To(BeEmpty())
+			})
+
+			It("should return all threads for the project", func() {
+				project := cfg.Projects[0]
+				// Add a test thread to the project
+				thread := conversations.Thread{
+					ID:          "test-thread-1",
+					Name:        "Test Thread",
+					Assistant:   "default",
+					Description: "Test Description",
+				}
+				err := assistant.Threads.AddThread(project.Name, thread)
+				Expect(err).NotTo(HaveOccurred())
+
+				req, _ := http.NewRequest("GET", "/projects/"+project.Name+"/conversations", nil)
+				resp := httptest.NewRecorder()
+
+				router.ServeHTTP(resp, req)
+				Expect(resp.Code).To(Equal(http.StatusOK))
+
+				var response map[string]interface{}
+				err = json.NewDecoder(resp.Body).Decode(&response)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(response["project"]).To(Equal(project.Name))
+				threads := response["threads"].([]interface{})
+				Expect(threads).To(HaveLen(1))
+
+				threadMap := threads[0].(map[string]interface{})
+				Expect(threadMap["id"]).To(Equal(thread.ID))
+				Expect(threadMap["name"]).To(Equal(thread.Name))
+				Expect(threadMap["assistant"]).To(Equal(thread.Assistant))
+				Expect(threadMap["description"]).To(Equal(thread.Description))
+			})
+		})
+
+		Context("with a non-existent project", func() {
+			It("should return 404 error", func() {
+				req, _ := http.NewRequest("GET", "/projects/nonexistent/conversations", nil)
+				resp := httptest.NewRecorder()
+
+				router.ServeHTTP(resp, req)
+				Expect(resp.Code).To(Equal(http.StatusNotFound))
+
+				var response map[string]interface{}
+				err := json.NewDecoder(resp.Body).Decode(&response)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(response["error"]).To(Equal("project 'nonexistent' not found"))
 			})
 		})
 	})
