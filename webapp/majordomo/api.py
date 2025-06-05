@@ -105,7 +105,7 @@ def get_projects() -> Union[Tuple[str, List[Project]], ResponseError]:
 
 def get_conversations(project_id: str) -> Union[List[Conversation], ResponseError]:
     """Get the list of conversations for a given project."""
-    url = f"{BASE_URL}/projects/{project_id}/sessions"
+    url = f"{BASE_URL}/projects/{project_id}/conversations"
     try:
         response = requests.get(url)
     except requests.RequestException as e:
@@ -114,7 +114,7 @@ def get_conversations(project_id: str) -> Union[List[Conversation], ResponseErro
         return ResponseError(title="API Error", message=response.text)
     try:
         data = response.json()
-        conversations = [Conversation.from_dict(item) for item in data.get("conversations", [])]
+        conversations = [Conversation.from_dict(item) for item in data.get("threads", [])]
         return conversations
     except Exception as e:
         return ResponseError(title="Decoding Error in Conversations",
