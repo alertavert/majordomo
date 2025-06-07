@@ -4,7 +4,8 @@ import argparse
 import streamlit as st
 from streamlit_option_menu import option_menu
 
-from majordomo.api import (ask_assistant, Conversation, )
+from majordomo.api import (ask_assistant, )
+from majordomo.model import Conversation
 from majordomo import (list_projects, list_assistants, list_conversations,
                        get_conversation_from_name, create_conversation, )
 from utils import setup_logger, get_logger
