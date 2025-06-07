@@ -64,7 +64,7 @@ def main():
 
     header_cols = st.columns([1, 2])
     with header_cols[0]:
-        st.image("https://img.icons8.com/ios-filled/50/000000/database.png", width=50)
+        st.image("webapp/static/images/AlertAvert-logo.png", width=50)
     with header_cols[1]:
         st.title("Majordomo")
     with st.sidebar:
@@ -77,75 +77,69 @@ def main():
         header = st.container(border=True)
         chat_area = st.container(height=500)
         prompt_area = st.container()
+        selected_conversation: str | None = None
+        conv: Conversation | None = None
         with header:
-            proj_col, conv_col, add_col = st.columns([0.4, 0.3, 0.2])
-            # TODO: use active project to pre-select in the selectbox
-            _, projects = list_projects()
-            assistants = list_assistants()
-            with proj_col:
-                active_project = st.selectbox("Project", [p.name for p in projects])
-            with conv_col:
-                selected_conversation = None
-                if active_project:
-                    conversations = list_conversations(active_project)
-                    log.debug(f"Conversations for {active_project}: {conversations}")
-                    selected_conversation = st.selectbox(
-                        "Conversation", [c.title for c in conversations]
-                        )
-                if not selected_conversation:
-                    with add_col:
-                        st.html(
-                            "<span style='margin: 0px; padding: 0px; font-size:12px'>Choose "
-                            "an Assistant</span>"
-                            )
-                        popover = st.popover("", icon=":material/add:")
-                        with popover:
-                            selected_assistant = st.segmented_control(
-                                "Assistants", [o.name for o in assistants], selection_mode="single"
-                            )
-                    # if selected_assistant:
-                    #     # Create a new conversation with a temporary name
-                    #     conv_name = "New Conversation"
-                    #     # Create the conversation and add it to the session state
-                    #     selected_conversation = create_conversation(conv_name, selected_assistant)
+            selector = st.container(border=False)
+            assistants_selector = st.container(border=False)
+            with selector:
+                proj_col, conv_col, add_col = st.columns([0.4, 0.3, 0.2])
+                # TODO: use active project to pre-select in the selectbox
+                _, projects = list_projects()
+                assistants = list_assistants()
+                with proj_col:
+                    active_project = st.selectbox("Project", [p.name for p in projects])
+                with conv_col:
+                    if active_project:
+                        conversations = list_conversations(active_project)
+                        log.debug(f"Conversations for {active_project}: {conversations}")
+                        selected_conversation = st.selectbox(
+                            "Conversation", [c.title for c in conversations])
 
-        with prompt_area:
             if selected_conversation:
-                log.debug(f"Selected conversation: {selected_conversation}")
                 conv = get_conversation_from_name(selected_conversation, active_project)
-            else:
-                # This is a newly created conversation
-                conv = create_conversation("New Conversation", selected_assistant)
-                log.debug(f"Conversation {conv} created")
-            if not conv.id:
-                log.debug(f"conversations {conv.title} has no thread_id, maybe it's a new "
-                          f"conversation for {selected_assistant}")
-            else:
-                # Retrieve all messages from the cache
-                # TODO: If it's not in the cache, we need to retrieve the messages from OpenAI API.
-                if conv.id in st.session_state.conversations:
-                    conv = st.session_state.conversations[conv.id]
+                log.debug(f"Selected conversation: {conv}")
+
+            with assistants_selector:
+                selected_assistant = st.segmented_control(
+                    label="Choose an assistant to start a new conversation",
+                    options=[o.name for o in assistants],
+                    selection_mode="single",
+                    default=conv.assistant if conv else None,
+                    disabled=conv is not None,
+                    label_visibility="collapsed" if conv else "visible",
+                )
+
+        if not conv and selected_assistant:
+            conv = create_conversation("New Conversation", selected_assistant)
+            log.info(f"Conversation created: {conv}")
+        if conv:
+            with prompt_area:
+                if not conv.id:
+                    log.debug(f"No ID for conversation: {conv.title} ({conv.assistant})")
                 else:
-                    st.session_state.conversations[conv.id] = conv
-            prompt = st.chat_input("Ask Majordomo")
-            if prompt:
-                conv.messages.append({"USER": prompt})
-                try:
-                    with st.spinner("Asking Majordomo..."):
-                        response = ask_assistant(prompt, conv.assistant, conv.id)
-                        conv.messages.append({"ASSISTANT": response.get("message")})
-                        if not conv.id:
-                            conv.id = response.get("thread_id")
-                            log.debug(f"New conversation assigned ID: {conv.id}")
-                        # Update the conversations' cache, including all messages
+                    # Retrieve all messages from the cache
+                    # TODO: If it's not in the cache, we need to retrieve the messages from OpenAI API.
+                    if conv.id in st.session_state.conversations:
+                        conv = st.session_state.conversations[conv.id]
+                    else:
                         st.session_state.conversations[conv.id] = conv
-                except Exception as e:
-                    st.error(f"An error occurred: {str(e)}")
-        with chat_area:
-            # if selected_conversation:
-            #     conv = get_conversation_from_name(selected_conversation, active_project)
-            #     log.debug(f"Conversation for {selected_conversation}: {conv}")
-            render_conversation(conv)
+                prompt = st.chat_input("Ask Majordomo")
+                if prompt:
+                    conv.messages.append({"USER": prompt})
+                    try:
+                        with st.spinner("Asking Majordomo..."):
+                            response = ask_assistant(prompt, conv.assistant, conv.id)
+                            conv.messages.append({"ASSISTANT": response.get("message")})
+                            if not conv.id:
+                                conv.id = response.get("thread_id")
+                                log.debug(f"New conversation assigned ID: {conv.id}")
+                            # Update the conversations' cache, including all messages
+                            st.session_state.conversations[conv.id] = conv
+                    except Exception as e:
+                        st.error(f"An error occurred: {str(e)}")
+            with chat_area:
+                render_conversation(conv)
 
     elif selected == "About":
         st.header("About Majordomo")

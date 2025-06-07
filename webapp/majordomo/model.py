@@ -12,12 +12,17 @@ from majordomo.api import (
     get_conversations,
 )
 
+def show_error_response(resp: ResponseError):
+    """
+    Display an error response in the Streamlit app.
+    """
+    st.error(f"# {resp.title}\n{resp.message}", icon="⚠️")
 
 @st.cache_data
 def list_projects() -> Tuple[str, List[Project]]:
     resp = get_projects()
     if isinstance(resp, ResponseError):
-        st.error(f"# {resp.title}\n{resp.message}", icon="⚠️")
+        show_error_response(resp)
         return "", []
     return resp
 
@@ -26,7 +31,7 @@ def list_projects() -> Tuple[str, List[Project]]:
 def list_assistants() -> List[Assistant]:
     resp = get_assistants()
     if isinstance(resp, ResponseError):
-        st.error(f"# {resp.title}\n{resp.message}", icon="⚠️")
+        show_error_response(resp)
         return []
     return resp
 
@@ -34,7 +39,7 @@ def list_assistants() -> List[Assistant]:
 def list_conversations(project_name) -> List[Conversation]:
     resp = get_conversations(project_name)
     if isinstance(resp, ResponseError):
-        st.error(f"# {resp.title}\n{resp.message}", icon="⚠️")
+        show_error_response(resp)
         return []
     return resp
 
@@ -49,7 +54,10 @@ def get_assistant_from_name(assistant_name: str) -> Assistant | None:
         if a.name == assistant_name:
             return a
     else:
-        st.error(f"# {assistant_name} not found.", icon="⚠️")
+        show_error_response(ResponseError(
+            title="Assistant Not Found",
+            message=f"Assistant '{assistant_name}' does not exist in the system."
+        ))
         return None
 
 
