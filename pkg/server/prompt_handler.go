@@ -53,9 +53,10 @@ func promptHandler(m *completions.Majordomo) func(c *gin.Context) {
 				Msg("New thread created")
 		}
 		c.JSON(http.StatusOK, gin.H{
-			"status":    "success",
-			"message":   botResponse,
-			"thread_id": requestBody.ThreadId,
+			"status":     "success",
+			"message":    botResponse,
+			"thread_id":  requestBody.ThreadId,
+			"thread_name": requestBody.ThreadName,
 		})
 	}
 }

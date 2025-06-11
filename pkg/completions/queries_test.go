@@ -99,6 +99,7 @@ var _ = Describe("Majordomo", func() {
 			request := completions.PromptRequest{
 				Assistant: "go_developer",
 				ThreadId:  "",
+				ThreadName: "test-thread",
 				Prompt:    prompt,
 			}
 			Expect(majordomo.PreparePrompt(&request)).ShouldNot(HaveOccurred())
@@ -121,6 +122,7 @@ var _ = Describe("Majordomo", func() {
 			request := completions.PromptRequest{
 				Assistant: "go_developer",
 				ThreadId:  "",
+				ThreadName: "test-thread",
 				Prompt:    prompt,
 			}
 			Expect(majordomo.PreparePrompt(&request)).To(HaveOccurred())
@@ -135,6 +137,7 @@ var _ = Describe("Majordomo", func() {
 			request := completions.PromptRequest{
 				Assistant: "go_developer",
 				ThreadId:  "",
+				ThreadName: "test-thread",
 				Prompt:    prompt,
 			}
 			Expect(majordomo.PreparePrompt(&request)).ShouldNot(HaveOccurred())
@@ -156,11 +159,11 @@ var _ = Describe("Majordomo", func() {
 			cfg.OpenAIApiKey = "invalid"
 			m, err := completions.NewMajordomo(cfg)
 			Expect(err).NotTo(HaveOccurred())
-			tid := m.CreateNewThread("My Project", "go_developer")
+			tid := m.CreateNewThread("My Project", "go_developer", "test-thread")
 			Expect(tid).To(BeEmpty())
 		})
 		It("should return an error if the project is not found", func() {
-			tid := majordomo.CreateNewThread("non-existent-project", "go_developer")
+			tid := majordomo.CreateNewThread("non-existent-project", "go_developer", "test-thread")
 			Expect(tid).To(BeEmpty())
 		})
 	})
