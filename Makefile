@@ -86,10 +86,12 @@ test: $(srcs) $(test_srcs)  ## Runs all tests
 
 .PHONY: integration_tests
 integration_tests: ## Runs integration tests (requires .env.test.local file with OPENAI_API_KEY)
-	@if [ ! -f .env.test.local ]; then \
-		echo "Error: .env.test.local file is required to run integration tests"; \
-		echo "Please create this file with your OpenAI API key in the format:"; \
-		echo "OPENAI_API_KEY=your_api_key_here"; \
+	@if [ -z "$$OPENAI_API_KEY" ] && [ ! -f .env.test.local ]; then \
+		echo "Error: Either OPENAI_API_KEY environment variable must be set or .env.test.local file must exist"; \
+		echo "Options:"; \
+		echo "1. Set OPENAI_API_KEY environment variable directly"; \
+		echo "2. Create .env.test.local file with your OpenAI API key in the format:"; \
+		echo "   OPENAI_API_KEY=your_api_key_here"; \
 		exit 1; \
 	fi
 	@mkdir -p build/reports

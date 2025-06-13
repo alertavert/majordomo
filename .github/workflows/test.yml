@@ -16,10 +16,20 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Use Go 1.21
+    - name: --- 𖣠 Use Go 1.21
       uses: actions/setup-go@v4
       with:
         go-version: "1.22"
 
-    - run: go get github.com/onsi/ginkgo/ginkgo
-    - run: go test ./pkg/...
+    - name: --- ⚙️ Install Ginkgo
+      run: |
+        go install github.com/onsi/ginkgo/ginkgo@latest
+        echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+
+    - name: --- 🛠️ Run Tests
+      run: make test
+
+    - name: --- 🚀 Run integration tests
+      run: make integration_tests
+      env:
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

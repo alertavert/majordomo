@@ -58,12 +58,25 @@ func readAPIKeyFromFile(filePath string) (string, error) {
 	return "", fmt.Errorf("OPENAI_API_KEY not found in file %s", filePath)
 }
 
+// getAPIKey first tries to get the API key from the environment variable,
+// and if not found, falls back to reading from the file
+func getAPIKey() (string, error) {
+	// First try to get the API key from the environment variable
+	apiKey := os.Getenv("OPENAI_API_KEY")
+	if apiKey != "" {
+		return apiKey, nil
+	}
+
+	// If not found in environment, try to read from file
+	return readAPIKeyFromFile(EnvFilePath)
+}
+
 func TestIntegration(t *testing.T) {
-	// Read API key from .env.test.local file
+	// Get API key from environment variable or file
 	var err error
-	ApiKey, err = readAPIKeyFromFile(EnvFilePath)
+	ApiKey, err = getAPIKey()
 	if err != nil || ApiKey == "" {
-		t.Fatalf("Failed to read OPENAI_API_KEY from %s: %v", EnvFilePath, err)
+		t.Fatalf("Failed to get OPENAI_API_KEY: %v", err)
 	}
 
 	RegisterFailHandler(Fail)
