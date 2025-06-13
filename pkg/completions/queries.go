@@ -26,12 +26,19 @@ const (
 )
 
 type PromptRequest struct {
-	// The assistant to use (selected by the user).
-	// TODO: this should be set at ThreadId creation time.
-	Assistant string `json:"assistant" validate:"required"`
+	// The assistant to use (selected by the user); only used if
+	// the Thread ID is empty.
+	Assistant string `json:"assistant" validate:"required_without=ThreadId"`
+
 	// The Thread ID (if any) to keep track of past prompts/responses in the conversation.
 	// If empty, a new conversation is started.
-	ThreadId string `json:"thread_id,omitempty"`
+	ThreadId string `json:"thread_id,omitempty" validate:"required_without_all=ThreadName"`
+
+	// The name of the thread, used to identify the conversation; required
+	// if the Thread ID is empty, to create a new Thread.
+	// TODO: in future versions, we should allow the LLM to suggest a name.
+	ThreadName string `json:"thread_name,omitempty" validate:"required_without_all=ThreadId"`
+
 	// The user prompt.
 	Prompt string `json:"prompt" validate:"required"`
 }
@@ -150,9 +157,9 @@ func (m *Majordomo) PreparePrompt(prompt *PromptRequest) error {
 }
 
 // CreateNewThread creates a new thread for the given project and returns the thread ID.
-func (m *Majordomo) CreateNewThread(project, assistant string) string {
+func (m *Majordomo) CreateNewThread(project, assistant, threadName string) string {
 	t, err := m.Client.CreateThread(context.Background(), openai.ThreadRequest{
-		Metadata: map[string]any{"project": project, "assistant": assistant},
+		Metadata: map[string]any{"project": project, "assistant": assistant, "thread_name": threadName},
 	})
 	if err != nil {
 		log.Err(err).Msg("error creating thread")
@@ -161,7 +168,7 @@ func (m *Majordomo) CreateNewThread(project, assistant string) string {
 	// TODO: we need to ask the LLM for a name and description.
 	var newThread = conversations.Thread{
 		ID:          t.ID,
-		Name:        "temp thread",
+		Name:        threadName,
 		Assistant:   assistant,
 		Description: "Some brief description for this thread",
 	}
@@ -188,8 +195,9 @@ func (m *Majordomo) QueryBot(prompt *PromptRequest) (string, error) {
 	if prompt.ThreadId == "" {
 		log.Debug().
 			Str("assistant", prompt.Assistant).
+			Str("thread_name", prompt.ThreadName).
 			Msg("creating new thread")
-		prompt.ThreadId = m.CreateNewThread(m.Config.ActiveProject, prompt.Assistant)
+		prompt.ThreadId = m.CreateNewThread(m.Config.ActiveProject, prompt.Assistant, prompt.ThreadName)
 	}
 	log.Debug().
 		Str("thread_id", prompt.ThreadId).

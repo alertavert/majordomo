@@ -2,6 +2,7 @@ package conversations
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"sync"
 
@@ -17,6 +18,32 @@ type Thread struct {
 	Name        string `json:"name"`
 	Assistant   string `json:"assistant"`
 	Description string `json:"description"`
+}
+
+// ValidationError provides more context about what field failed validation
+type ValidationError struct {
+	Field   string
+	Message string
+}
+
+func (e ValidationError) Error() string {
+	return fmt.Sprintf("validation failed for %s: %s", e.Field, e.Message)
+}
+
+func (thread Thread) Validate() error {
+	if thread.ID == "" && thread.Name == "" {
+		return ValidationError{
+			Field:   "ID/Name",
+			Message: "either ID or Name must be specified",
+		}
+	}
+	if thread.Assistant == "" {
+		return ValidationError{
+			Field:   "Assistant",
+			Message: "assistant must be specified",
+		}
+	}
+	return nil
 }
 
 // ThreadsMap is a map of Project names to their respective Threads.
@@ -55,6 +82,10 @@ func NewThreadStore(cfg *config.Config) *ThreadStore {
 
 // AddThread adds a new thread to the thread map and persists the map to storage.
 func (ts *ThreadStore) AddThread(projectName string, thread Thread) error {
+	if err := thread.Validate(); err != nil {
+		log.Error().Err(err).Msg("Invalid thread data")
+		return err
+	}
 	ts.mu.Lock()
 	defer ts.mu.Unlock()
 	// TODO: do we need to check first if the key exists in the map?

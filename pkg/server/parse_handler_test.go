@@ -44,6 +44,7 @@ var _ = Describe("Parse Handler", func() {
 				promptReq := completions.PromptRequest{
 					Prompt:    "Write a simple hello world program",
 					Assistant: "default",
+					ThreadName: "test-thread",
 				}
 				body, _ := json.Marshal(promptReq)
 				req, _ := http.NewRequest("POST", "/parse", bytes.NewBuffer(body))
@@ -63,6 +64,7 @@ var _ = Describe("Parse Handler", func() {
 				promptReq := completions.PromptRequest{
 					Prompt:    "Update the code in `main.go`",
 					Assistant: "default",
+					ThreadName: "test-thread",
 				}
 				body, _ := json.Marshal(promptReq)
 				req, _ := http.NewRequest("POST", "/parse", bytes.NewBuffer(body))

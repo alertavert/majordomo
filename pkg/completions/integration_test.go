@@ -25,7 +25,7 @@ var _ = Describe("Integration Tests: When querying OpenAI", func() {
 	Context("with a valid API key", func() {
 		// Enable logging for the test.
 		It("can create a new thread", func() {
-			tid := activeBot.CreateNewThread("test-project", "go_developer")
+			tid := activeBot.CreateNewThread("test-project", "go_developer", "test-thread")
 			Expect(tid).NotTo(BeEmpty())
 		})
 		It("should return a response for a valid prompt", func() {
@@ -34,6 +34,7 @@ var _ = Describe("Integration Tests: When querying OpenAI", func() {
 			request := PromptRequest{
 				Assistant: "go_developer",
 				ThreadId:  "",
+				ThreadName: "test-thread",
 				Prompt:    prompt,
 			}
 			Eventually(func(g Gomega) {
@@ -49,11 +50,11 @@ var _ = Describe("Integration Tests: When querying OpenAI", func() {
 			}, "2s", "2s").Should(Succeed())
 		})
 		It("should create a new thread even if the project had never been seen before", func() {
-			tid := activeBot.CreateNewThread("non-existent-project", "not an assistant")
+			tid := activeBot.CreateNewThread("non-existent-project", "not an assistant", "non-existent-thread")
 			Expect(tid).NotTo(BeEmpty())
 		})
 		It("requires a valid project and assistant to create a thread", func() {
-			tid := activeBot.CreateNewThread("test-project", "go_developer")
+			tid := activeBot.CreateNewThread("test-project", "go_developer", "valid-thread")
 			Expect(tid).NotTo(BeEmpty())
 		})
 	})
