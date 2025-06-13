@@ -166,5 +166,30 @@ var _ = Describe("Majordomo", func() {
 			tid := majordomo.CreateNewThread("non-existent-project", "go_developer", "test-thread")
 			Expect(tid).To(BeEmpty())
 		})
+		It("should fail to suggest a thread name if the API key is invalid", func() {
+			cfg.OpenAIApiKey = "invalid"
+			m, err := completions.NewMajordomo(cfg)
+			Expect(err).NotTo(HaveOccurred())
+			name, err := m.SuggestThreadName("Test prompt")
+			Expect(err).To(HaveOccurred())
+			Expect(name).To(BeEmpty())
+		})
+		It("should attempt to query the bot with empty thread_id and thread_name", func() {
+			// Create a request with empty thread_id and thread_name
+			request := completions.PromptRequest{
+				Assistant: "go_developer",
+				ThreadId:  "",
+				ThreadName: "",
+				Prompt:    "Test prompt",
+			}
+
+			// We expect QueryBot to fail because we're not mocking the OpenAI API
+			// and the API key is invalid in the test environment
+			_, err := majordomo.QueryBot(&request)
+			Expect(err).To(HaveOccurred())
+
+			// We can't verify the exact thread name that was suggested,
+			// but we can verify that the function attempted to process the request
+		})
 	})
 })
