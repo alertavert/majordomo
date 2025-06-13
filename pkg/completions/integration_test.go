@@ -57,5 +57,43 @@ var _ = Describe("Integration Tests: When querying OpenAI", func() {
 			tid := activeBot.CreateNewThread("test-project", "go_developer", "valid-thread")
 			Expect(tid).NotTo(BeEmpty())
 		})
+
+		It("can suggest a thread name based on the prompt", func() {
+			prompt := "How do I implement a binary search tree in Go?"
+			suggestedName, err := activeBot.SuggestThreadName(prompt)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(suggestedName).NotTo(BeEmpty())
+
+			// Check that the suggested name is not too long (should be 5 words or less)
+			words := 0
+			for _, c := range suggestedName {
+				if c == ' ' {
+					words++
+				}
+			}
+			// Add 1 for the last word (which doesn't end with a space)
+			words++
+			Expect(words).To(BeNumerically("<=", 10), "Suggested name should be 10 words or less")
+		})
+
+		It("should automatically suggest a thread name when neither thread_id nor thread_name is provided", func() {
+			prompt := "What is the best way to handle errors in Go?"
+			request := PromptRequest{
+				Assistant: "go_developer",
+				ThreadId:  "",
+				ThreadName: "", // Intentionally empty to trigger name suggestion
+				Prompt:    prompt,
+			}
+
+			Eventually(func(g Gomega) {
+				response, err := activeBot.QueryBot(&request)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(response).NotTo(BeEmpty())
+
+				// The thread name should have been set automatically
+				g.Expect(request.ThreadName).NotTo(BeEmpty())
+				g.Expect(request.ThreadId).NotTo(BeEmpty())
+			}, "2s", "2s").Should(Succeed())
+		})
 	})
 })

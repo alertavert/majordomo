@@ -106,26 +106,9 @@ var _ = Describe("Prompt Handler", func() {
 				Expect(response["status"]).To(Equal("error"))
 			})
 
-			It("should return 400 when both thread ID and thread name are missing", func() {
-				promptReq := map[string]string{
-					"prompt":    "Test prompt",
-					"assistant": "default",
-					// Both thread_id and thread_name are intentionally omitted
-				}
-				body, _ := json.Marshal(promptReq)
-				req, _ := http.NewRequest("POST", "/prompt", bytes.NewBuffer(body))
-				req.Header.Set("Content-Type", "application/json")
-				resp := httptest.NewRecorder()
-
-				router.ServeHTTP(resp, req)
-
-				Expect(resp.Code).To(Equal(http.StatusBadRequest))
-				var response map[string]interface{}
-				Expect(json.Unmarshal(resp.Body.Bytes(), &response)).ShouldNot(HaveOccurred())
-				Expect(response["status"]).To(Equal("error"))
-				// Verify the error message indicates the thread validation issue
-				Expect(response["message"]).To(ContainSubstring("required"))
-			})
+			// Note: We no longer require either thread_id or thread_name to be present
+			// as we now support automatic thread name suggestion when both are missing.
+			// This test has been removed.
 		})
 	})
 })

@@ -26,18 +26,16 @@ const (
 )
 
 type PromptRequest struct {
-	// The assistant to use (selected by the user); only used if
-	// the Thread ID is empty.
-	Assistant string `json:"assistant" validate:"required_without=ThreadId"`
+	// The assistant to use (selected by the user); always required.
+	Assistant string `json:"assistant" validate:"required"`
 
 	// The Thread ID (if any) to keep track of past prompts/responses in the conversation.
 	// If empty, a new conversation is started.
-	ThreadId string `json:"thread_id,omitempty" validate:"required_without_all=ThreadName"`
+	ThreadId string `json:"thread_id,omitempty"`
 
-	// The name of the thread, used to identify the conversation; required
-	// if the Thread ID is empty, to create a new Thread.
-	// TODO: in future versions, we should allow the LLM to suggest a name.
-	ThreadName string `json:"thread_name,omitempty" validate:"required_without_all=ThreadId"`
+	// The name of the thread, used to identify the conversation.
+	// If both ThreadId and ThreadName are empty, a name will be suggested by the LLM.
+	ThreadName string `json:"thread_name,omitempty"`
 
 	// The user prompt.
 	Prompt string `json:"prompt" validate:"required"`
@@ -74,6 +72,48 @@ type Majordomo struct {
 
 	// The configuration object to manage the Projects in the server handlers
 	Config *config.Config
+}
+
+// SuggestThreadName suggests a title for a thread based on the prompt text.
+// It uses the OpenAI API to generate a title no longer than 5 words.
+func (m *Majordomo) SuggestThreadName(prompt string) (string, error) {
+	if m.Client == nil {
+		return "", fmt.Errorf("OpenAI client not initialized")
+	}
+
+	ctx := context.Background()
+	resp, err := m.Client.CreateChatCompletion(
+		ctx,
+		openai.ChatCompletionRequest{
+			Model: m.Model,
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role:    openai.ChatMessageRoleSystem,
+					Content: "You are a helpful assistant that suggests concise titles for conversations. Provide a title that is no longer than 5 words based on the user's prompt. Return only the title, nothing else.",
+				},
+				{
+					Role:    openai.ChatMessageRoleUser,
+					Content: prompt,
+				},
+			},
+			MaxTokens: 20,
+		},
+	)
+	if err != nil {
+		log.Err(err).Msg("error suggesting thread name")
+		return "", err
+	}
+
+	if len(resp.Choices) == 0 {
+		return "", fmt.Errorf("no suggestions returned from OpenAI")
+	}
+
+	suggestedName := resp.Choices[0].Message.Content
+	log.Debug().
+		Str("suggested_name", suggestedName).
+		Msg("suggested thread name")
+
+	return suggestedName, nil
 }
 
 func NewMajordomo(cfg *config.Config) (*Majordomo, error) {
@@ -193,6 +233,22 @@ func (m *Majordomo) QueryBot(prompt *PromptRequest) (string, error) {
 	// TODO: create an appropriate context for the query.
 	// Create a new conversation if the thread ID is empty.
 	if prompt.ThreadId == "" {
+		// If thread name is also empty, suggest a name based on the prompt
+		if prompt.ThreadName == "" {
+			suggestedName, err := m.SuggestThreadName(prompt.Prompt)
+			if err != nil {
+				log.Warn().
+					Err(err).
+					Msg("failed to suggest thread name, using default")
+				prompt.ThreadName = "Untitled Conversation"
+			} else {
+				prompt.ThreadName = suggestedName
+			}
+			log.Debug().
+				Str("thread_name", prompt.ThreadName).
+				Msg("using suggested thread name")
+		}
+
 		log.Debug().
 			Str("assistant", prompt.Assistant).
 			Str("thread_name", prompt.ThreadName).
