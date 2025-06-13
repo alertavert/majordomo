@@ -2,46 +2,37 @@
  * Copyright (c) 2024 AlertAvert.com. All rights reserved.
  */
 
-package completions_test
+package integration
 
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/rs/zerolog"
 
-	. "github.com/alertavert/gpt4-go/pkg/completions"
+	"github.com/alertavert/gpt4-go/pkg/completions"
 )
 
 var _ = Describe("Integration Tests: When querying OpenAI", func() {
-	BeforeEach(func() {
-		if apiKey == "" {
-			Skip("No OPENAI_API_KEY found")
-		}
-		// We want to see the logs for integration tests, at least until they become stable
-		// TODO: increase the log level to ErrorLevel once the tests are stable
-		zerolog.SetGlobalLevel(zerolog.Disabled)
-	})
-
 	Context("with a valid API key", func() {
 		// Enable logging for the test.
 		It("can create a new thread", func() {
-			tid := activeBot.CreateNewThread("test-project", "go_developer", "test-thread")
+			tid := ActiveBot.CreateNewThread("test-project", "go_developer", "test-thread")
 			Expect(tid).NotTo(BeEmpty())
 		})
+
 		It("should return a response for a valid prompt", func() {
 			prompt := "Please update this code:\n'''sample/main.go\n" +
 				"'''to also print the current date."
-			request := PromptRequest{
-				Assistant: "go_developer",
-				ThreadId:  "",
+			request := completions.PromptRequest{
+				Assistant:  "go_developer",
+				ThreadId:   "",
 				ThreadName: "test-thread",
-				Prompt:    prompt,
+				Prompt:     prompt,
 			}
 			Eventually(func(g Gomega) {
 				// TODO: run this in a goroutine and check the response
 				// in the main thread.
 
-				response, err := activeBot.QueryBot(&request)
+				response, err := ActiveBot.QueryBot(&request)
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(response).NotTo(BeEmpty())
 				// TODO: check that the response contains the expected code.
@@ -49,18 +40,20 @@ var _ = Describe("Integration Tests: When querying OpenAI", func() {
 				// TODO: once background processing is enabled, change the timeout
 			}, "2s", "2s").Should(Succeed())
 		})
+
 		It("should create a new thread even if the project had never been seen before", func() {
-			tid := activeBot.CreateNewThread("non-existent-project", "not an assistant", "non-existent-thread")
+			tid := ActiveBot.CreateNewThread("non-existent-project", "not an assistant", "non-existent-thread")
 			Expect(tid).NotTo(BeEmpty())
 		})
+
 		It("requires a valid project and assistant to create a thread", func() {
-			tid := activeBot.CreateNewThread("test-project", "go_developer", "valid-thread")
+			tid := ActiveBot.CreateNewThread("test-project", "go_developer", "valid-thread")
 			Expect(tid).NotTo(BeEmpty())
 		})
 
 		It("can suggest a thread name based on the prompt", func() {
 			prompt := "How do I implement a binary search tree in Go?"
-			suggestedName, err := activeBot.SuggestThreadName(prompt)
+			suggestedName, err := ActiveBot.SuggestThreadName(prompt)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(suggestedName).NotTo(BeEmpty())
 
@@ -78,15 +71,15 @@ var _ = Describe("Integration Tests: When querying OpenAI", func() {
 
 		It("should automatically suggest a thread name when neither thread_id nor thread_name is provided", func() {
 			prompt := "What is the best way to handle errors in Go?"
-			request := PromptRequest{
-				Assistant: "go_developer",
-				ThreadId:  "",
+			request := completions.PromptRequest{
+				Assistant:  "go_developer",
+				ThreadId:   "",
 				ThreadName: "", // Intentionally empty to trigger name suggestion
-				Prompt:    prompt,
+				Prompt:     prompt,
 			}
 
 			Eventually(func(g Gomega) {
-				response, err := activeBot.QueryBot(&request)
+				response, err := ActiveBot.QueryBot(&request)
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(response).NotTo(BeEmpty())
 

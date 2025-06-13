@@ -25,7 +25,7 @@ image := alertavert/$(prog):${VERSION}
 
 # Source files & Test files definitions
 
-pkgs := $(shell find pkg -mindepth 1 -type d)
+pkgs := $(shell find pkg -mindepth 1 -type d | grep -v pkg/integration)
 all_go := $(shell for d in $(pkgs); do find $$d -name "*.go"; done)
 test_srcs := $(shell for d in $(pkgs); do find $$d -name "*_test.go"; done)
 srcs := $(filter-out $(test_srcs),$(all_go))
@@ -83,6 +83,19 @@ test: $(srcs) $(test_srcs)  ## Runs all tests
 	ginkgo -keepGoing -cover -coverprofile=coverage.out -outputdir=build/reports $(pkgs)
 # Clean up the coverage files (they are not needed once the report is generated)
 	@find ./pkg -name "coverage.out" -exec rm {} \;
+
+.PHONY: integration_tests
+integration_tests: ## Runs integration tests (requires .env.test.local file with OPENAI_API_KEY)
+	@if [ -z "$$OPENAI_API_KEY" ] && [ ! -f .env.test.local ]; then \
+		echo "Error: Either OPENAI_API_KEY environment variable must be set or .env.test.local file must exist"; \
+		echo "Options:"; \
+		echo "1. Set OPENAI_API_KEY environment variable directly"; \
+		echo "2. Create .env.test.local file with your OpenAI API key in the format:"; \
+		echo "   OPENAI_API_KEY=your_api_key_here"; \
+		exit 1; \
+	fi
+	@mkdir -p build/reports
+	@ginkgo -keepGoing pkg/integration
 
 .PHONY: watch
 watch: $(srcs) $(test_srcs)  ## Runs all tests every time a source or test file changes

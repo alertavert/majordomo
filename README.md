@@ -22,6 +22,22 @@ The project is described in [Using OpenAI GPT to build a Coding Assistant that u
 
 Run a development instance using `make dev`, the server is available at `http://localhost:5000`.
 
+## Run Integration Tests
+
+To run the integration tests, you need to create a `.env.test.local` file in the project root with your OpenAI API key:
+
+```
+OPENAI_API_KEY=your_api_key_here
+```
+
+Then run the tests with:
+
+```shell
+make integration_tests
+```
+
+This will execute all integration tests that interact with the OpenAI API. If the `.env.test.local` file is missing or doesn't contain a valid API key, the tests will fail with an appropriate error message.
+
 ## Docker & Kubernetes
 
 The container can be created with `make container` the image name and version are determined automatically (the version will match what is in [`settings.yaml`](settings.yaml)), something like:
