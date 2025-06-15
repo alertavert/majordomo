@@ -111,9 +111,12 @@ coverage: build/reports/coverage.out ## Shows the coverage report in the browser
 all: build test ## Builds the binary and runs all tests
 
 PORT ?= 5005
-.PHONY: dev
+.PHONY: dev app
 dev: build ## Runs the server binary in development mode
 	build/bin/$(bin) -debug -port $(PORT)
+
+app:  ## Runs the Web UI using Streamlit in Debug mode
+	@streamlit run webapp/app.py -- --debug
 
 ##@ Container Management
 dockerfile := Dockerfile

@@ -140,6 +140,9 @@ def main() -> None:
                             if not conv.id:
                                 conv.id = response.get("thread_id")
                                 log.debug(f"New conversation assigned ID: {conv.id}")
+                            if not conv.title:
+                                conv.title = response.get("thread_name")
+                                log.debug(f"New conversation title: {conv.title}")
                             # Update the conversations' cache, including all messages
                             st.session_state.conversations[conv.id] = conv
                     except Exception as e:
