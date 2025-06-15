@@ -66,7 +66,8 @@ def main() -> None:
         log.debug("Creating conversations' cache")
         st.session_state.conversations = {}
     else:
-        log.debug(f"Conversation cache initialized: {st.session_state.conversations}")
+        log.debug(f"Conversation cache initialized: "
+                  f"{[c.title for c in st.session_state.conversations]}")
 
     header_cols = st.columns([1, 2])
     with header_cols[0]:
@@ -80,6 +81,8 @@ def main() -> None:
             icons=["cloud-upload", "info-circle"], menu_icon="cast", default_index=0, )
 
     if selected == "Ask Majordomo":
+        log.debug(f"---- entering 'Ask Majordomo' section ----")
+
         header = st.container(border=True)
         chat_area = st.container(height=500)
         prompt_area = st.container()
@@ -98,9 +101,25 @@ def main() -> None:
                 with conv_col:
                     if active_project:
                         conversations = list_conversations(active_project)
-                        log.debug(f"Conversations for {active_project}: {conversations}")
+                        log.debug(f"Conversations for {active_project}: {[c.title for c in conversations]}")
                         selected_conversation = st.selectbox(
                             "Conversation", [c.title for c in conversations])
+                with add_col:
+                    option_map = {
+                        0: ":material/add:",
+                        1: ":material/zoom_out_map:",
+                    }
+                    selection = st.segmented_control(
+                        "New Conversation",
+                        options=option_map.keys(),
+                        format_func=lambda option: option_map[option],
+                        selection_mode="single",
+                    )
+                    if selection == 0:
+                        selected_conversation = None
+                        conv = None
+                        log.debug("Creating a new conversation")
+
 
             if selected_conversation:
                 conv = get_conversation(selected_conversation, active_project)
@@ -115,9 +134,10 @@ def main() -> None:
                     disabled=conv is not None,
                     label_visibility="collapsed" if conv else "visible",
                 )
-
+        new_conv = False
         if not conv and selected_assistant:
             conv = create_conversation(selected_assistant)
+            new_conv = True
             log.info(f"Conversation created: {conv}")
         if conv:
             with prompt_area:
@@ -149,6 +169,7 @@ def main() -> None:
                         st.error(f"An error occurred: {str(e)}")
             with chat_area:
                 render_conversation(conv)
+                log.debug(f"Rendered conversation: {conv.title}")
 
     elif selected == "About":
         st.header("About Majordomo")
