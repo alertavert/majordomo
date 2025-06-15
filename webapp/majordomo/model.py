@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Any
 
 
 @dataclass
@@ -10,7 +10,7 @@ class Project:
     location: Path
 
     @staticmethod
-    def from_dict(data: Dict[str, Any]) -> "Project":
+    def from_dict(data: dict[str, Any]) -> "Project":
         return Project(
             name=data.get("name"), description=data.get("description"),
             location=Path(data.get("location"))
@@ -25,7 +25,7 @@ class Assistant:
     instructions: str
 
     @staticmethod
-    def from_dict(data: Dict[str, Any]) -> "Assistant":
+    def from_dict(data: dict[str, Any]) -> "Assistant":
         return Assistant(
             id=data.get("id"), name=data.get("name"), model=data.get("model"),
             instructions=data.get("instructions")
@@ -37,10 +37,10 @@ class Conversation:
     id: str | None
     title: str
     assistant: str
-    messages: List[Dict[str, str]]
+    messages: list[dict[str, str]]
 
     @staticmethod
-    def from_dict(data: Dict[str, Any]) -> "Conversation":
+    def from_dict(data: dict[str, Any]) -> "Conversation":
         return Conversation(
             id=data.get("id"),
             title=data.get("name"),

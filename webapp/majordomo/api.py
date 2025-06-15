@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Union, Any, Dict, Tuple
+from typing import List, Any, Dict, Tuple
 
 import requests
 
@@ -20,7 +20,7 @@ class ResponseError:
     message: str
 
 
-def get_assistants() -> Union[List[Assistant], ResponseError]:
+def get_assistants() -> list[Assistant] | ResponseError:
     """Get the list of Assistants for the OpenAI Project."""
     url = f"{BASE_URL}/assistants"
     try:
@@ -37,7 +37,7 @@ def get_assistants() -> Union[List[Assistant], ResponseError]:
         return ResponseError(title="Decoding Error", message=str(e))
 
 
-def get_projects() -> Union[Tuple[str, List[Project]], ResponseError]:
+def get_projects() -> tuple[str, list[Project]] | ResponseError:
     """Get the list of Projects."""
     url = f"{BASE_URL}/projects"
     try:
@@ -56,7 +56,7 @@ def get_projects() -> Union[Tuple[str, List[Project]], ResponseError]:
         return ResponseError(title="Decoding Error", message=str(e))
 
 
-def get_conversations(project_id: str) -> Union[List[Conversation], ResponseError]:
+def get_conversations(project_id: str) -> list[Conversation] | ResponseError:
     """Get the list of conversations for a given project."""
     url = f"{BASE_URL}/projects/{project_id}/conversations"
     try:
@@ -70,13 +70,17 @@ def get_conversations(project_id: str) -> Union[List[Conversation], ResponseErro
         conversations = [Conversation.from_dict(item) for item in data.get("threads", [])]
         return conversations
     except Exception as e:
-        return ResponseError(title="Decoding Error in Conversations",
-                             message=f"Cannot decode server response for conversations for "
-                                     f"project {project_id}: {e}")
+        return ResponseError(
+            title="Decoding Error in Conversations",
+            message=f"Cannot decode server response for conversations for "
+                    f"project {project_id}: {e}"
+            )
 
 
-def ask_assistant(prompt: str, assistant: str, thread_id: Union[str, None] = None) -> Union[
-    Dict[str, Any], ResponseError]:
+def ask_assistant(
+        prompt: str,
+        assistant: str,
+        thread_id: str | None = None) -> dict[str, Any] | ResponseError:
     """
     Send a prompt to the assistant via POST '/prompt' and return the API response.
 

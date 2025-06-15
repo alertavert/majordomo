@@ -1,19 +1,21 @@
-from .model import (
-    list_assistants,
-    list_projects,
-    list_conversations,
-    get_project_from_name,
-    get_assistant_from_name,
-    get_conversation_from_name,
+from .service import (
     create_conversation,
+    get_assistant,
+    get_conversation,
+    get_project,
+    list_assistants,
+    list_conversations,
+    list_projects,
 )
 
 __all__ = [
-"list_projects",
-"list_assistants",
-"list_conversations",
-"get_project_from_name",
-"get_assistant_from_name",
-"get_conversation_from_name",
-"create_conversation",
+    "get_project",
+    "list_projects",
+
+    "get_assistant",
+    "list_assistants",
+
+    "create_conversation",
+    "get_conversation",
+    "list_conversations",
 ]

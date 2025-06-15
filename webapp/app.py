@@ -4,15 +4,20 @@ import argparse
 import streamlit as st
 from streamlit_option_menu import option_menu
 
-from majordomo.api import (ask_assistant, )
+from majordomo.api import ask_assistant
 from majordomo.model import Conversation
-from majordomo import (list_projects, list_assistants, list_conversations,
-                       get_conversation_from_name, create_conversation, )
+from majordomo import (
+    create_conversation,
+    get_conversation,
+    list_projects,
+    list_assistants,
+    list_conversations,
+)
 from utils import setup_logger, get_logger
 import constants
 
 
-def render_conversation(conversation: Conversation):
+def render_conversation(conversation: Conversation) -> None:
     log = get_logger()
     cached_conv = st.session_state.conversations.get(conversation.id)
     log.debug(f"Cached conversation: {cached_conv.title if cached_conv else 'Not Found'}")
@@ -25,8 +30,8 @@ def render_conversation(conversation: Conversation):
 
 
 # Parse command line arguments
-def parse_args():
-    # Streamlit passes its own arguments; however, we can bypass it, by using `--` as a delimiter:
+def parse_args() -> argparse.Namespace:
+    # Streamlit passes its own arguments; however, we can bypass it by using `--` as a delimiter:
     # Run the app like this:
     #   streamlit run app.py -- --debug --server localhost:5050
     parser = argparse.ArgumentParser(description="Majordomo Code Assistant")
@@ -48,7 +53,7 @@ def init_logger(debug: bool) -> logging.Logger:
     return get_logger()
 
 
-def main():
+def main() -> None:
     st.set_page_config(page_title="Majordomo")
     args = parse_args()
     log = init_logger(args.debug)
@@ -58,7 +63,7 @@ def main():
     log.debug(f"Connecting to API Server at: {args.server}")
 
     if "conversations" not in st.session_state:
-        log.debug("Creating conversations cache")
+        log.debug("Creating conversations' cache")
         st.session_state.conversations = {}
     else:
         log.debug(f"Conversation cache initialized: {st.session_state.conversations}")
@@ -85,7 +90,7 @@ def main():
             assistants_selector = st.container(border=False)
             with selector:
                 proj_col, conv_col, add_col = st.columns([0.4, 0.3, 0.2])
-                # TODO: use active project to pre-select in the selectbox
+                # TODO: Active project ought to be pre-selected
                 _, projects = list_projects()
                 assistants = list_assistants()
                 with proj_col:
@@ -98,7 +103,7 @@ def main():
                             "Conversation", [c.title for c in conversations])
 
             if selected_conversation:
-                conv = get_conversation_from_name(selected_conversation, active_project)
+                conv = get_conversation(selected_conversation, active_project)
                 log.debug(f"Selected conversation: {conv}")
 
             with assistants_selector:
@@ -112,7 +117,7 @@ def main():
                 )
 
         if not conv and selected_assistant:
-            conv = create_conversation("New Conversation", selected_assistant)
+            conv = create_conversation(selected_assistant)
             log.info(f"Conversation created: {conv}")
         if conv:
             with prompt_area:
@@ -147,7 +152,7 @@ def main():
         st.write(
             """
                     Our system uses specialized AI agents to:
-                    1. 🔍 Analyze the Code content
+                    1. 🔍 Analyze Code content
                     3. 🎯 Enrich your Code with the most relevant information
                     4. 👥 Query the LLM with enriched data
                     5. 💡 Provide answers to detailed technical questions

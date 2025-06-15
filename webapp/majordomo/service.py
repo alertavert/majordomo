@@ -1,4 +1,3 @@
-from typing import Tuple, List
 
 import streamlit as st
 
@@ -10,14 +9,14 @@ from majordomo.api import (ResponseError,
 from majordomo.model import Project, Assistant, Conversation
 
 
-def show_error_response(resp: ResponseError):
+def show_error_response(resp: ResponseError) -> None:
     """
     Display an error response in the Streamlit app.
     """
     st.error(f"# {resp.title}\n{resp.message}", icon="⚠️")
 
 @st.cache_data
-def list_projects() -> Tuple[str, List[Project]]:
+def list_projects() -> tuple[str, list[Project]]:
     resp = get_projects()
     if isinstance(resp, ResponseError):
         show_error_response(resp)
@@ -26,7 +25,7 @@ def list_projects() -> Tuple[str, List[Project]]:
 
 
 @st.cache_data
-def list_assistants() -> List[Assistant]:
+def list_assistants() -> list[Assistant]:
     resp = get_assistants()
     if isinstance(resp, ResponseError):
         show_error_response(resp)
@@ -34,7 +33,7 @@ def list_assistants() -> List[Assistant]:
     return resp
 
 
-def list_conversations(project_name) -> List[Conversation]:
+def list_conversations(project_name: str) -> list[Conversation]:
     resp = get_conversations(project_name)
     if isinstance(resp, ResponseError):
         show_error_response(resp)
@@ -63,7 +62,7 @@ def get_conversation(conv_name: str, project_name: str) -> Conversation:
     return next(c for c in list_conversations(project_name) if c.title == conv_name)
 
 
-def create_conversation(name, assistant) -> Conversation:
+def create_conversation(assistant: str, name: str | None = None) -> Conversation:
     return Conversation(
         id=None,
         title=name,
